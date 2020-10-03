@@ -36,6 +36,7 @@
 
 #include <fluent-bit/flb_info.h>
 #include <fluent-bit/flb_kv.h>
+#include <fluent-bit/flb_log.h>
 #include <fluent-bit/flb_mem.h>
 #include <fluent-bit/flb_http_client.h>
 #include <fluent-bit/flb_http_client_debug.h>
@@ -584,6 +585,7 @@ struct flb_http_client *flb_http_client(struct flb_upstream_conn *u_conn,
     char *p;
     char *buf = NULL;
     char *str_method = NULL;
+    char *str_proxy = NULL;
     char *fmt_plain =                           \
         "%s %s HTTP/1.%i\r\n";
     char *fmt_proxy =                           \
@@ -613,20 +615,42 @@ struct flb_http_client *flb_http_client(struct flb_upstream_conn *u_conn,
         return NULL;
     }
 
-    /* FIXME: handler for HTTPS proxy */
-    if (!proxy) {
-        ret = snprintf(buf, FLB_HTTP_BUF_SIZE,
-                       fmt_plain,
-                       str_method,
-                       uri,
-                       flags & FLB_HTTP_10 ? 0 : 1);
+    /*
+     * Order for setting a http_proxy:
+     * 1. From proxy param;
+     * 2. From environment varialbe `HTTP_PROXY`;
+     */
+    /*
+     * Parse `HTTP_PROXY` environment variable, since it is
+     * very commonly used in container environment for specifying
+     * http_proxy.
+     * Reference: https://docs.docker.com/network/proxy/#use-environment-variables
+     */
+    if (proxy) {
+        str_proxy = proxy;
+        flb_debug("[PROXY] HTTP_PROXY ctx (not env var): %s", str_proxy);
+    } else {
+        str_proxy = getenv("HTTP_PROXY");
+        flb_debug("[PROXY] HTTP_PROXY env var: %s", str_proxy);
     }
-    else {
+
+
+    /* FIXME: handler for HTTPS proxy */
+    if (str_proxy) {
+        flb_debug("[PROXY] using http_proxy %s", str_proxy);
         ret = snprintf(buf, FLB_HTTP_BUF_SIZE,
                        fmt_proxy,
                        str_method,
                        host,
                        port,
+                       uri,
+                       flags & FLB_HTTP_10 ? 0 : 1);
+    }
+    else {
+        flb_debug("[PROXY] not using http_proxy");
+        ret = snprintf(buf, FLB_HTTP_BUF_SIZE,
+                       fmt_plain,
+                       str_method,
                        uri,
                        flags & FLB_HTTP_10 ? 0 : 1);
     }
@@ -683,9 +707,11 @@ struct flb_http_client *flb_http_client(struct flb_upstream_conn *u_conn,
     add_host_and_content_length(c);
 
     /* Check proxy data */
-    if (proxy) {
-        ret = proxy_parse(proxy, c);
+    if (str_proxy) {
+        flb_debug("[PROXY] Using http_proxy: %s", str_proxy);
+        ret = proxy_parse(str_proxy, c);
         if (ret != 0) {
+            flb_debug("Something wrong with the http_proxy parsing");
             flb_free(buf);
             flb_free(c);
             return NULL;
