@@ -161,6 +161,8 @@ struct flb_config *flb_config_init()
     config->http_port    = flb_strdup(FLB_CONFIG_HTTP_PORT);
 #endif
 
+    config->http_proxy = getenv("HTTP_PROXY");
+
     config->cio          = NULL;
     config->storage_path = NULL;
     config->storage_input_plugin = NULL;

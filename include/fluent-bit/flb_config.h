@@ -144,6 +144,9 @@ struct flb_config {
     void *http_ctx;           /* Monkey HTTP context    */
 #endif
 
+    /* HTTP Proxy */
+    char *http_proxy;
+
     /* Chunk I/O Buffering */
     void *cio;
     char *storage_path;

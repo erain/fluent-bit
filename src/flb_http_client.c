@@ -637,7 +637,7 @@ struct flb_http_client *flb_http_client(struct flb_upstream_conn *u_conn,
 
     /* FIXME: handler for HTTPS proxy */
     if (str_proxy) {
-        flb_debug("[PROXY] using http_proxy %s", str_proxy);
+        flb_debug("[PROXY] using http_proxy %s for header", str_proxy);
         ret = snprintf(buf, FLB_HTTP_BUF_SIZE,
                        fmt_proxy,
                        str_method,
@@ -647,7 +647,7 @@ struct flb_http_client *flb_http_client(struct flb_upstream_conn *u_conn,
                        flags & FLB_HTTP_10 ? 0 : 1);
     }
     else {
-        flb_debug("[PROXY] not using http_proxy");
+        flb_debug("[PROXY] not using http_proxy for header");
         ret = snprintf(buf, FLB_HTTP_BUF_SIZE,
                        fmt_plain,
                        str_method,
