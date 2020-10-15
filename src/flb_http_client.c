@@ -521,7 +521,12 @@ static int add_host_and_content_length(struct flb_http_client *c)
     struct flb_upstream *u = c->u_conn->u;
 
     if (!c->host) {
-        out_host = u->tcp_host;
+        if (u->proxied_host) {
+            out_host = u->proxied_host;
+        }
+        else {
+            out_host = u->tcp_host;
+        }
     }
     else {
         out_host = (char *) c->host;
@@ -535,7 +540,12 @@ static int add_host_and_content_length(struct flb_http_client *c)
     }
 
     if (c->port == 0) {
-        out_port = u->tcp_port;
+        if (u->proxied_port != 0 ) {
+            out_port = u->proxied_port;
+        }
+        else {
+            out_port = u->tcp_port;
+        }
     }
     else {
         out_port = c->port;
@@ -585,11 +595,14 @@ struct flb_http_client *flb_http_client(struct flb_upstream_conn *u_conn,
     char *p;
     char *buf = NULL;
     char *str_method = NULL;
-    char *str_proxy = NULL;
     char *fmt_plain =                           \
         "%s %s HTTP/1.%i\r\n";
     char *fmt_proxy =                           \
         "%s http://%s:%i%s HTTP/1.%i\r\n"
+        "Proxy-Connection: KeepAlive\r\n";
+    // TODO: IPv6 should have the format of [ip]:port
+    char *fmt_connect =                           \
+        "%s %s:%i HTTP/1.%i\r\n"
         "Proxy-Connection: KeepAlive\r\n";
 
     struct flb_http_client *c;
@@ -607,6 +620,9 @@ struct flb_http_client *flb_http_client(struct flb_upstream_conn *u_conn,
     case FLB_HTTP_HEAD:
         str_method = "HEAD";
         break;
+    case FLB_HTTP_CONNECT:
+        str_method = "CONNECT";
+        break;
     };
 
     buf = flb_calloc(1, FLB_HTTP_BUF_SIZE);
@@ -615,35 +631,24 @@ struct flb_http_client *flb_http_client(struct flb_upstream_conn *u_conn,
         return NULL;
     }
 
-    /*
-     * Order for setting a http_proxy:
-     * 1. From proxy param;
-     * 2. From environment varialbe `HTTP_PROXY`;
-     */
-    /*
-     * Parse `HTTP_PROXY` environment variable, since it is
-     * very commonly used in container environment for specifying
-     * http_proxy.
-     * Reference: https://docs.docker.com/network/proxy/#use-environment-variables
-     */
-    if (proxy) {
-        str_proxy = proxy;
-        flb_debug("[PROXY] HTTP_PROXY ctx (not env var): %s", str_proxy);
-    } else {
-        str_proxy = getenv("HTTP_PROXY");
-        flb_debug("[PROXY] HTTP_PROXY env var: %s", str_proxy);
-    }
-
-
     /* FIXME: handler for HTTPS proxy */
-    if (str_proxy) {
-        flb_debug("[PROXY] using http_proxy %s for header", str_proxy);
+    if (proxy) {
+        flb_debug("[PROXY] using http_proxy %s for header", proxy);
         ret = snprintf(buf, FLB_HTTP_BUF_SIZE,
                        fmt_proxy,
                        str_method,
                        host,
                        port,
                        uri,
+                       flags & FLB_HTTP_10 ? 0 : 1);
+    }
+    else if (method == FLB_HTTP_CONNECT) {
+        flb_debug("[PROXY] using HTTP CONNECT for proxy");
+        ret = snprintf(buf, FLB_HTTP_BUF_SIZE,
+                       fmt_connect,
+                       str_method,
+                       host,
+                       port,
                        flags & FLB_HTTP_10 ? 0 : 1);
     }
     else {
@@ -707,9 +712,9 @@ struct flb_http_client *flb_http_client(struct flb_upstream_conn *u_conn,
     add_host_and_content_length(c);
 
     /* Check proxy data */
-    if (str_proxy) {
-        flb_debug("[PROXY] Using http_proxy: %s", str_proxy);
-        ret = proxy_parse(str_proxy, c);
+    if (proxy) {
+        flb_debug("[PROXY] Using http_proxy: %s", proxy);
+        ret = proxy_parse(proxy, c);
         if (ret != 0) {
             flb_debug("Something wrong with the http_proxy parsing");
             flb_free(buf);
@@ -1094,6 +1099,7 @@ int flb_http_do(struct flb_http_client *c, size_t *bytes)
     }
 #endif
 
+    flb_debug("HTTP header=%s", c->header_buf);
     /* Write the header */
     ret = flb_io_net_write(c->u_conn,
                            c->header_buf, c->header_len,

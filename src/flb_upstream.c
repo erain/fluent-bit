@@ -102,6 +102,8 @@ struct flb_upstream *flb_upstream_create(struct flb_config *config,
 
         u->tcp_host = flb_strdup(proxy_host);
         u->tcp_port = atoi(proxy_port);
+        u->proxied_host = flb_strdup(host);
+        u->proxied_port = port;
 
         flb_free(proxy_protocol);
         flb_free(proxy_host);
@@ -332,6 +334,7 @@ int flb_upstream_destroy(struct flb_upstream *u)
     }
 
     flb_free(u->tcp_host);
+    flb_free(u->proxied_host);
     mk_list_del(&u->_head);
     flb_free(u);
 
