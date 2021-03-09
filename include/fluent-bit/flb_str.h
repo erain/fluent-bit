@@ -58,4 +58,10 @@ static inline char *flb_strndup(const char *s, size_t n)
     return str;
 }
 
+/* Checks whether a string `str` has a prefix `pre`. */
+static inline int flb_strpre(const char *pre, const char *str)
+{
+    return strncmp(pre, str, strlen(pre)) == 0;
+}
+
 #endif

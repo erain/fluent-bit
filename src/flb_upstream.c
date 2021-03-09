@@ -185,7 +185,7 @@ struct flb_upstream *flb_upstream_create(struct flb_config *config,
     flb_net_setup_init(&u->net);
 
     /* Set upstream to the http_proxy if it is specified. */
-    if (config->http_proxy) {
+    if (config->http_proxy && flb_should_proxy_for_host(host) == FLB_TRUE) {
         flb_debug("[upstream] config->http_proxy: %s", config->http_proxy);
         ret = flb_utils_proxy_url_split(config->http_proxy, &proxy_protocol,
                                         &proxy_username, &proxy_password,
@@ -237,6 +237,24 @@ struct flb_upstream *flb_upstream_create(struct flb_config *config,
     return u;
 }
 
+/* Checks whehter a destinate URL should be proxied.
+ * This is a patch for fluent-bit working in a Kubernetes cluster
+ * which later will contribute to  upstream for proper `NO_PROXY` support:
+ * https://github.com/fluent/fluent-bit/issues/2805
+ */
+int flb_should_proxy_for_host(const char *host)
+{
+    /* Do not proxy loopback traffic  */
+    if (strcasecmp(host, "localhost") == 0 || strcasecmp(host, "127.0.0.1") == 0) {
+        return FLB_FALSE;
+    }
+    /* Do no proxy URLs with `Kubernetes.default.svc` prefix */
+    /* reference: https://github.com/fluent/fluent-bit/blob/f5166af229e6d6dace091f86e93e89cb374c9fdc/plugins/filter_kubernetes/kube_conf.h#L54  */
+    if (flb_strpre("kubernetes.default.svc", host)) {
+        return FLB_FALSE;
+    }
+    return FLB_TRUE;
+}
 
 /* Create an upstream context using a valid URL (protocol, host and port) */
 struct flb_upstream *flb_upstream_create_url(struct flb_config *config,
