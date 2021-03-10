@@ -248,9 +248,13 @@ int flb_should_proxy_for_host(const char *host)
     if (strcasecmp(host, "localhost") == 0 || strcasecmp(host, "127.0.0.1") == 0) {
         return FLB_FALSE;
     }
-    /* Do no proxy URLs with `Kubernetes.default.svc` prefix */
-    /* reference: https://github.com/fluent/fluent-bit/blob/f5166af229e6d6dace091f86e93e89cb374c9fdc/plugins/filter_kubernetes/kube_conf.h#L54  */
-    if (flb_strpre("kubernetes.default.svc", host)) {
+    /* Do no proxy URLs for kubernetes apiserver URL */
+    /* Here we enumerate all possible apiserver URL forms.*/
+    if (strcasecmp(host, "kubernetes") == 0 ||
+        strcasecmp(host, "kubernetes.default") == 0 ||
+        strcasecmp(host, "kubernetes.default.svc") == 0 ||
+        strcasecmp(host, "kubernetes.default.svc.cluster") == 0 ||
+        strcasecmp(host, "kubernetes.default.svc.cluster.local") == 0 ) {
         return FLB_FALSE;
     }
     return FLB_TRUE;
