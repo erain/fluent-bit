@@ -551,7 +551,7 @@ static int process_local_resource_id(struct flb_stackdriver *ctx, char *type)
     int len_k8s_container;
     int len_k8s_node;
     int len_k8s_pod;
-    int prefix_len;
+    size_t prefix_len = 0;
     struct local_resource_id_list *ptr;
     struct mk_list *list = NULL;
     struct mk_list *head;
@@ -788,23 +788,36 @@ static void cb_results(const char *name, const char *value,
     return;
 }
 
+
+int flb_stackdriver_regex_init(struct flb_stackdriver *ctx)
+{
+    /* If a custom regex is not set, use the defaults */
+    if (!ctx->custom_regex) {
+        ctx->custom_regex = flb_sds_create(DEFAULT_TAG_REGEX);
+    }
+
+    ctx->regex = flb_regex_create(ctx->custom_regex);
+    if (!ctx->regex) {
+        return -1;
+    }
+
+    return 0;
+}
+
 int is_tag_match_regex(struct flb_stackdriver *ctx, const char *tag, int tag_len)
 {
     int ret;
     int tag_prefix_len;
     int len_to_be_matched;
     const char *tag_str_to_be_matcheds;
-    struct flb_regex *regex;
 
     tag_prefix_len = flb_sds_len(ctx->tag_prefix);
     tag_str_to_be_matcheds = tag + tag_prefix_len;
     len_to_be_matched = tag_len - tag_prefix_len;
 
-    regex = flb_regex_create(DEFAULT_TAG_REGEX);
-    ret = flb_regex_match(regex,
+    ret = flb_regex_match(ctx->regex,
                           (unsigned char *) tag_str_to_be_matcheds,
                           len_to_be_matched);
-    flb_regex_destroy(regex);
 
     /* 1 -> match;  0 -> doesn't match;  < 0 -> error */
     return ret;
@@ -820,22 +833,19 @@ int extract_resource_labels_from_regex(struct flb_stackdriver *ctx,
     int tag_prefix_len;
     int len_to_be_matched;
     const char *tag_str_to_be_matcheds;
-    struct flb_regex *regex;
     struct flb_regex_search result;
 
     tag_prefix_len = flb_sds_len(ctx->tag_prefix);
     tag_str_to_be_matcheds = tag + tag_prefix_len;
     len_to_be_matched = tag_len - tag_prefix_len;
 
-    regex = flb_regex_create(DEFAULT_TAG_REGEX);
-    ret = flb_regex_do(regex, tag_str_to_be_matcheds, len_to_be_matched, &result);
+    ret = flb_regex_do(ctx->regex, tag_str_to_be_matcheds, len_to_be_matched, &result);
     if (ret <= 0) {
         flb_plg_warn(ctx->ins, "invalid pattern for given tag %s", tag);
         return -1;
     }
 
-    flb_regex_parse(regex, &result, cb_results, ctx);
-    flb_regex_destroy(regex);
+    flb_regex_parse(ctx->regex, &result, cb_results, ctx);
 
     return ret;
 }
@@ -928,7 +938,13 @@ static int cb_stackdriver_init(struct flb_output_instance *ins,
     }
 
     if (!ctx->export_to_project_id) {
-        ctx->export_to_project_id = flb_sds_create(ctx->project_id);
+      ctx->export_to_project_id = flb_sds_create(ctx->project_id);
+    }
+
+    ret = flb_stackdriver_regex_init(ctx);
+    if (ret == -1) {
+        flb_plg_error(ctx->ins, "failed to init stackdriver custom regex");
+        return -1;
     }
 
     return 0;

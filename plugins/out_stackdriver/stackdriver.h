@@ -26,6 +26,7 @@
 #include <fluent-bit/flb_oauth2.h>
 #include <fluent-bit/flb_sds.h>
 #include <fluent-bit/flb_pthread.h>
+#include <fluent-bit/flb_regex.h>
 
 /* refresh token every 50 minutes */
 #define FLB_STD_TOKEN_REFRESH 3000
@@ -132,6 +133,9 @@ struct flb_stackdriver {
     bool autoformat_stackdriver_trace;
 
     flb_sds_t stackdriver_agent;
+    /* Regex context to parse tags */
+    flb_sds_t custom_regex;
+    struct flb_regex *regex;
 
     /* oauth2 context */
     struct flb_oauth2 *o;
