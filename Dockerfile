@@ -1,12 +1,8 @@
-FROM debian:buster as builder
-
-# Fluent Bit version
-ENV FLB_MAJOR 1
-ENV FLB_MINOR 7
-ENV FLB_PATCH 4
-ENV FLB_VERSION 1.7.4
-
+FROM amd64/debian:buster-slim as builder
+RUN mkdir -p /fluent-bit/bin /fluent-bit/etc /fluent-bit/log /tmp/fluent-bit-master/
 ENV DEBIAN_FRONTEND noninteractive
+
+ADD . /source
 
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
@@ -20,18 +16,14 @@ RUN apt-get update && \
     libsasl2-dev \
     pkg-config \
     libsystemd-dev \
-    libzstd-dev \
     zlib1g-dev \
     libpq-dev \
     postgresql-server-dev-all \
     flex \
     bison
 
-RUN mkdir -p /fluent-bit/bin /fluent-bit/etc /fluent-bit/log /tmp/src/
-COPY . /tmp/src/
-RUN rm -rf /tmp/src/build/*
+WORKDIR /source/build/
 
-WORKDIR /tmp/src/build/
 RUN cmake -DFLB_RELEASE=On \
           -DFLB_TRACE=Off \
           -DFLB_JEMALLOC=On \
@@ -41,7 +33,7 @@ RUN cmake -DFLB_RELEASE=On \
           -DFLB_HTTP_SERVER=On \
           -DFLB_IN_SYSTEMD=On \
           -DFLB_OUT_KAFKA=On \
-          -DFLB_OUT_PGSQL=On ../
+          -DFLB_OUT_PGSQL=On ..
 
 RUN make -j $(getconf _NPROCESSORS_ONLN)
 RUN install bin/fluent-bit /fluent-bit/bin/
@@ -58,9 +50,14 @@ COPY conf/fluent-bit.conf \
      /fluent-bit/etc/
 
 FROM gcr.io/distroless/cc-debian10
-LABEL maintainer="Eduardo Silva <eduardo@treasure-data.com>"
+MAINTAINER Eduardo Silva <eduardo@treasure-data.com>
 LABEL Description="Fluent Bit docker image" Vendor="Fluent Organization" Version="1.1"
 
+# Copy certificates
+COPY --from=builder /usr/share/ca-certificates/  /usr/share/ca-certificates/
+COPY --from=builder /etc/ssl/ /etc/ssl/
+
+# SSL stuff
 COPY --from=builder /usr/lib/x86_64-linux-gnu/*sasl* /usr/lib/x86_64-linux-gnu/
 COPY --from=builder /usr/lib/x86_64-linux-gnu/libz* /usr/lib/x86_64-linux-gnu/
 COPY --from=builder /lib/x86_64-linux-gnu/libz* /lib/x86_64-linux-gnu/
@@ -75,8 +72,6 @@ COPY --from=builder /usr/lib/x86_64-linux-gnu/liblz4.so* /usr/lib/x86_64-linux-g
 COPY --from=builder /lib/x86_64-linux-gnu/libgcrypt.so* /lib/x86_64-linux-gnu/
 COPY --from=builder /lib/x86_64-linux-gnu/libpcre.so* /lib/x86_64-linux-gnu/
 COPY --from=builder /lib/x86_64-linux-gnu/libgpg-error.so* /lib/x86_64-linux-gnu/
-
-# PostgreSQL output plugin
 COPY --from=builder /usr/lib/x86_64-linux-gnu/libpq.so* /usr/lib/x86_64-linux-gnu/
 COPY --from=builder /usr/lib/x86_64-linux-gnu/libgssapi* /usr/lib/x86_64-linux-gnu/
 COPY --from=builder /usr/lib/x86_64-linux-gnu/libldap* /usr/lib/x86_64-linux-gnu/
@@ -97,8 +92,5 @@ COPY --from=builder /lib/x86_64-linux-gnu/libkeyutils* /lib/x86_64-linux-gnu/
 
 COPY --from=builder /fluent-bit /fluent-bit
 
-#
 EXPOSE 2020
-
-# Entry point
 CMD ["/fluent-bit/bin/fluent-bit", "-c", "/fluent-bit/etc/fluent-bit.conf"]
