@@ -50,6 +50,10 @@ pthread_key_t oauth2_type;
 pthread_key_t oauth2_token;
 pthread_key_t oauth2_token_expires;
 
+static int oauth2_global_initialized = 0;
+static int oauth2_instance_count = 0;
+static pthread_mutex_t oauth2_global_lock = PTHREAD_MUTEX_INITIALIZER;
+
 static void oauth2_cache_exit(void *ptr)
 {
     if (ptr) {
@@ -68,32 +72,50 @@ static int oauth2_cache_init()
 {
     int ret;
 
+    pthread_mutex_lock(&oauth2_global_lock);
+
+    if (oauth2_global_initialized) {
+        pthread_mutex_unlock(&oauth2_global_lock);
+        return 0;
+    }
+
     /* oauth2 pthread key */
     ret = pthread_key_create(&oauth2_type, oauth2_cache_exit);
     if (ret != 0) {
+        pthread_mutex_unlock(&oauth2_global_lock);
         return -1;
     }
     ret = pthread_key_create(&oauth2_token, oauth2_cache_exit);
     if (ret != 0) {
         pthread_key_delete(oauth2_type);
+        pthread_mutex_unlock(&oauth2_global_lock);
         return -1;
     }
     ret = pthread_key_create(&oauth2_token_expires, oauth2_cache_free_expiration);
     if (ret != 0) {
         pthread_key_delete(oauth2_type);
         pthread_key_delete(oauth2_token);
+        pthread_mutex_unlock(&oauth2_global_lock);
         return -1;
     }
+
+    oauth2_global_initialized = 1;
+    pthread_mutex_unlock(&oauth2_global_lock);
     return 0;
 }
 
 static void oauth2_cache_cleanup(struct flb_stackdriver *ctx)
 {
-    if (ctx->oauth2_cache_initialized) {
+    pthread_mutex_lock(&oauth2_global_lock);
+    oauth2_instance_count--;
+
+    if (oauth2_instance_count == 0 && oauth2_global_initialized) {
         pthread_key_delete(oauth2_type);
         pthread_key_delete(oauth2_token);
         pthread_key_delete(oauth2_token_expires);
+        oauth2_global_initialized = 0;
     }
+    pthread_mutex_unlock(&oauth2_global_lock);
 }
 
 /* Set oauth2 type and token in pthread keys */
@@ -1266,7 +1288,10 @@ static int cb_stackdriver_init(struct flb_output_instance *ins,
         flb_plg_error(ins, "failed to initialize oauth2 cache");
         return -1;
     }
-    ctx->oauth2_cache_initialized = FLB_TRUE;
+
+    pthread_mutex_lock(&oauth2_global_lock);
+    oauth2_instance_count++;
+    pthread_mutex_unlock(&oauth2_global_lock);
 
     /* Create mutex for acquiring oauth tokens (they are shared across flush coroutines) */
     ret = pthread_mutex_init(&ctx->token_mutex, NULL);
