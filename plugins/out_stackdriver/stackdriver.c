@@ -64,12 +64,27 @@ static void oauth2_cache_free_expiration(void *ptr)
     }
 }
 
-static void oauth2_cache_init()
+static int oauth2_cache_init()
 {
+    int ret;
+
     /* oauth2 pthread key */
-    pthread_key_create(&oauth2_type, oauth2_cache_exit);
-    pthread_key_create(&oauth2_token, oauth2_cache_exit);
-    pthread_key_create(&oauth2_token_expires, oauth2_cache_free_expiration);
+    ret = pthread_key_create(&oauth2_type, oauth2_cache_exit);
+    if (ret != 0) {
+        return -1;
+    }
+    ret = pthread_key_create(&oauth2_token, oauth2_cache_exit);
+    if (ret != 0) {
+        pthread_key_delete(oauth2_type);
+        return -1;
+    }
+    ret = pthread_key_create(&oauth2_token_expires, oauth2_cache_free_expiration);
+    if (ret != 0) {
+        pthread_key_delete(oauth2_type);
+        pthread_key_delete(oauth2_token);
+        return -1;
+    }
+    return 0;
 }
 
 static void oauth2_cache_cleanup(struct flb_stackdriver *ctx)
@@ -1246,11 +1261,19 @@ static int cb_stackdriver_init(struct flb_output_instance *ins,
     }
 
     /* Initialize oauth2 cache pthread keys */
-    oauth2_cache_init();
+    ret = oauth2_cache_init();
+    if (ret != 0) {
+        flb_plg_error(ins, "failed to initialize oauth2 cache");
+        return -1;
+    }
     ctx->oauth2_cache_initialized = FLB_TRUE;
 
     /* Create mutex for acquiring oauth tokens (they are shared across flush coroutines) */
-    pthread_mutex_init(&ctx->token_mutex, NULL);
+    ret = pthread_mutex_init(&ctx->token_mutex, NULL);
+    if (ret != 0) {
+        flb_plg_error(ins, "failed to initialize token mutex");
+        return -1;
+    }
     ctx->token_mutex_initialized = FLB_TRUE;
 
     /* Create Upstream context for Stackdriver Logging (no oauth2 service) */
