@@ -72,11 +72,13 @@ static void oauth2_cache_init()
     pthread_key_create(&oauth2_token_expires, oauth2_cache_free_expiration);
 }
 
-static void oauth2_cache_cleanup()
+static void oauth2_cache_cleanup(struct flb_stackdriver *ctx)
 {
-    pthread_key_delete(oauth2_type);
-    pthread_key_delete(oauth2_token);
-    pthread_key_delete(oauth2_token_expires);
+    if (ctx->oauth2_cache_initialized) {
+        pthread_key_delete(oauth2_type);
+        pthread_key_delete(oauth2_token);
+        pthread_key_delete(oauth2_token_expires);
+    }
 }
 
 /* Set oauth2 type and token in pthread keys */
@@ -1245,9 +1247,11 @@ static int cb_stackdriver_init(struct flb_output_instance *ins,
 
     /* Initialize oauth2 cache pthread keys */
     oauth2_cache_init();
+    ctx->oauth2_cache_initialized = FLB_TRUE;
 
     /* Create mutex for acquiring oauth tokens (they are shared across flush coroutines) */
     pthread_mutex_init(&ctx->token_mutex, NULL);
+    ctx->token_mutex_initialized = FLB_TRUE;
 
     /* Create Upstream context for Stackdriver Logging (no oauth2 service) */
     ctx->u = flb_upstream_create_url(config, ctx->cloud_logging_write_url,
@@ -3094,7 +3098,7 @@ static int cb_stackdriver_exit(void *data, struct flb_config *config)
         return -1;
     }
 
-    oauth2_cache_cleanup();
+    oauth2_cache_cleanup(ctx);
     flb_stackdriver_conf_destroy(ctx);
     return 0;
 }

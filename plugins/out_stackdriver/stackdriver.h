@@ -204,6 +204,8 @@ struct flb_stackdriver {
 
     /* mutex for acquiring oauth tokens */
     pthread_mutex_t token_mutex;
+    int token_mutex_initialized;
+    int oauth2_cache_initialized;
 
     /* upstream context for stackdriver write end-point */
     struct flb_upstream *u;
