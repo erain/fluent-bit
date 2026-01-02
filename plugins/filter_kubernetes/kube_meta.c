@@ -2296,7 +2296,7 @@ static inline int flb_kube_pod_meta_get(struct flb_kube *ctx,
 {
     int id;
     int ret;
-    const char *hash_meta_buf;
+    const char *hash_meta_buf = NULL;
     char *tmp_hash_meta_buf;
     size_t off = 0;
     size_t hash_meta_size;
@@ -2335,6 +2335,16 @@ static inline int flb_kube_pod_meta_get(struct flb_kube *ctx,
             flb_hash_table_get_by_id(ctx->hash_table, id, meta->cache_key,
                                      &hash_meta_buf, &hash_meta_size);
         }
+        else {
+            flb_plg_error(ctx->ins, "could not add metadata to the cache: %s",
+                          meta->cache_key);
+            flb_free(tmp_hash_meta_buf);
+            return -1;
+        }
+    }
+
+    if (!hash_meta_buf) {
+        return -1;
     }
 
     /*
@@ -2375,7 +2385,7 @@ static inline int flb_kube_namespace_meta_get(struct flb_kube *ctx,
 {
     int id;
     int ret;
-    const char *hash_meta_buf;
+    const char *hash_meta_buf = NULL;
     char *tmp_hash_meta_buf;
     size_t off = 0;
     size_t hash_meta_size;
@@ -2414,6 +2424,16 @@ static inline int flb_kube_namespace_meta_get(struct flb_kube *ctx,
             flb_hash_table_get_by_id(ctx->namespace_hash_table, id, meta->cache_key,
                                      &hash_meta_buf, &hash_meta_size);
         }
+        else {
+            flb_plg_error(ctx->ins, "could not add namespace metadata to the cache: %s",
+                          meta->cache_key);
+            flb_free(tmp_hash_meta_buf);
+            return -1;
+        }
+    }
+
+    if (!hash_meta_buf) {
+        return -1;
     }
 
     /*

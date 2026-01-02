@@ -40,6 +40,7 @@ struct flb_kube *flb_kube_conf_create(struct flb_filter_instance *ins,
 {
     int off;
     int ret;
+    int cache_size = FLB_HASH_TABLE_SIZE;
     const char *url;
     const char *tmp;
     const char *p;
@@ -125,30 +126,35 @@ struct flb_kube *flb_kube_conf_create(struct flb_filter_instance *ins,
         }
     }
 
+    /* Check if a custom cache size has been defined */
+    if (ctx->kube_meta_cache_size > 0) {
+        cache_size = ctx->kube_meta_cache_size;
+    }
+
     if (ctx->kube_meta_cache_ttl > 0) {
         ctx->hash_table = flb_hash_table_create_with_ttl(ctx->kube_meta_cache_ttl,
                                                          FLB_HASH_TABLE_EVICT_OLDER,
-                                                         FLB_HASH_TABLE_SIZE,
-                                                         FLB_HASH_TABLE_SIZE);
+                                                         cache_size,
+                                                         cache_size);
     }
     else {
         ctx->hash_table = flb_hash_table_create(FLB_HASH_TABLE_EVICT_RANDOM,
-                                                FLB_HASH_TABLE_SIZE,
-                                                FLB_HASH_TABLE_SIZE);
+                                                cache_size,
+                                                cache_size);
     }
 
     if (ctx->kube_meta_namespace_cache_ttl > 0) {
         ctx->namespace_hash_table = flb_hash_table_create_with_ttl(
                                             ctx->kube_meta_namespace_cache_ttl,
                                             FLB_HASH_TABLE_EVICT_OLDER,
-                                            FLB_HASH_TABLE_SIZE,
-                                            FLB_HASH_TABLE_SIZE);
+                                            cache_size,
+                                            cache_size);
     }
     else {
         ctx->namespace_hash_table = flb_hash_table_create(
                                             FLB_HASH_TABLE_EVICT_RANDOM,
-                                            FLB_HASH_TABLE_SIZE,
-                                            FLB_HASH_TABLE_SIZE);
+                                            cache_size,
+                                            cache_size);
     }
 
 
@@ -192,8 +198,8 @@ struct flb_kube *flb_kube_conf_create(struct flb_filter_instance *ins,
 
     ctx->aws_pod_service_hash_table = flb_hash_table_create_with_ttl(ctx->aws_pod_service_map_ttl,
                                        FLB_HASH_TABLE_EVICT_OLDER,
-                                       FLB_HASH_TABLE_SIZE,
-                                       FLB_HASH_TABLE_SIZE);
+                                       cache_size,
+                                       cache_size);
     if (!ctx->aws_pod_service_hash_table) {
         flb_kube_conf_destroy(ctx);
         return NULL;
