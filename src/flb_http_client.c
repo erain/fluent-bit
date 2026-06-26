@@ -49,6 +49,7 @@
 #include <fluent-bit/flb_http_common.h>
 #include <fluent-bit/flb_http_client.h>
 #include <fluent-bit/flb_http_client_debug.h>
+#include <fluent-bit/flb_upstream_node.h>
 #include <fluent-bit/flb_network.h>
 #include <fluent-bit/flb_utils.h>
 #include <fluent-bit/flb_base64.h>
