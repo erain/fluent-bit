@@ -39,6 +39,7 @@
 #include <fluent-bit/flb_utils.h>
 #include <fluent-bit/flb_config.h>
 #include <fluent-bit/flb_engine.h>
+#include <fluent-bit/flb_atomic.h>
 #include <fluent-bit/flb_event.h>
 #include <fluent-bit/flb_engine_dispatch.h>
 #include <fluent-bit/flb_network.h>
@@ -1121,7 +1122,8 @@ int flb_engine_start(struct flb_config *config)
         return -2;
     }
 
-    config->grace_input  = config->grace / 2;
+    /* published to the supervisor/main thread, which reads it concurrently */
+    flb_atomic_store(&config->grace_input, config->grace / 2);
     flb_info("[engine] Shutdown Grace Period=%d, Shutdown Input Grace Period=%d", config->grace, config->grace_input);
 
     while (1) {
