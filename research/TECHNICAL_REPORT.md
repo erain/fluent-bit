@@ -13,9 +13,9 @@ Fluent Bit on GKE acts as the primary log aggregator. It collects container logs
 - **Environment:** GKE `fluent-bit-agent` on ARM64 nodes (n4a-standard-32).
 - **Target Component:** `1.36.3-gke.0` (with custom backports from master/HEAD).
 - **Output Plugin:** `out_stackdriver` (LoggingV3 API).
-- **Active Configurations:**
-  - `workers: 2` (enabled for output formatting/concurrency).
-  - `Use_Kubelet: On` (local kubelet metadata extraction).
+- **Configurations Reference:**
+  - **Stock Configuration:** [fluent-bit-stock.yaml](file:///usr/local/google/home/yiyu/src/fluent-bit/research/configs/fluent-bit-stock.yaml) (`workers: 1`, `Use_Kubelet: On`).
+  - **Suggested Configuration:** [fluent-bit-suggested.yaml](file:///usr/local/google/home/yiyu/src/fluent-bit/research/configs/fluent-bit-suggested.yaml) (`workers: 2`, `Use_Kubelet: On` optimized for concurrency and ARM64).
 
 ---
 
