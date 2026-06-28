@@ -1,0 +1,8 @@
+out_stackdriver: fix formatting mismatches and concurrency crash
+
+- Fix map size calculation mismatches by synchronizing KV extraction checks
+  in pack_payload.
+- Remove response buffer size limit to prevent failures on large responses.
+- Introduce resource_mutex in struct flb_stackdriver to synchronize
+  concurrency-unsafe resource labels extraction and parsing across multiple
+  worker threads.

@@ -1,0 +1,93 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: loggen
+  namespace: lab-loadgen
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: loggen
+  template:
+    metadata:
+      labels:
+        app: loggen
+    spec:
+      tolerations:
+      - key: "kubernetes.io/arch"
+        operator: "Equal"
+        value: "arm64"
+        effect: "NoSchedule"
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                  - loggen
+              topologyKey: kubernetes.io/hostname
+      containers:
+      - name: generator
+        image: python:3.11-slim
+        command:
+        - python3
+        - -c
+        - |
+          import os, sys, time, json
+          rate = int(os.environ.get('RATE', '500'))
+          size = int(os.environ.get('SIZE', '1024'))
+          gen_id = os.environ.get('GEN_ID', 'default')
+          workload_type = os.environ.get('WORKLOAD_TYPE', 'json')
+          
+          # Prepare the payload
+          msg = 'x' * size
+          seq = 0
+          
+          interval = 1.0 / rate
+          print(f"Starting loggen with rate={rate}, size={size}, gen_id={gen_id}, type={workload_type}", flush=True)
+          
+          # Warmup prints
+          time.sleep(1)
+          
+          next_time = time.time()
+          while True:
+              if workload_type == 'plaintext':
+                  sys.stdout.write(f"gen_id={gen_id} seq={seq} message={msg}\n")
+              elif workload_type == 'high-cardinality':
+                  payload = {"gen_id": gen_id, "seq": seq, "message": msg}
+                  for i in range(10):
+                      payload[f"key_{(seq + i) % 100}"] = f"val_{i}"
+                  sys.stdout.write(json.dumps(payload) + "\n")
+              elif workload_type == 'multiline':
+                  sys.stdout.write(f"Exception in thread \"main\" java.lang.NullPointerException: gen_id={gen_id} seq={seq}\n  at com.example.MyClass.method(MyClass.java:10)\n  at com.example.MyClass.main(MyClass.java:5)\n  at java.base/java.lang.Thread.run(Thread.time)\n")
+              else:
+                  sys.stdout.write(json.dumps({"gen_id": gen_id, "seq": seq, "message": msg}) + "\n")
+              sys.stdout.flush()
+              seq += 1
+              next_time += interval
+              sleep_time = next_time - time.time()
+              if sleep_time > 0:
+                  time.sleep(sleep_time)
+              elif sleep_time < -1.0:
+                  # Behind schedule, reset next_time
+                  next_time = time.time()
+        env:
+        - name: WORKLOAD_TYPE
+          value: "json"
+        - name: RATE
+          value: "500"
+        - name: SIZE
+          value: "1024"
+        - name: GEN_ID
+          value: "default"
+        resources:
+          requests:
+            cpu: 100m
+            memory: 100Mi
+          limits:
+            cpu: "1"
+            memory: 200Mi

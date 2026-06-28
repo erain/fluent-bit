@@ -1,0 +1,820 @@
+apiVersion: v1
+data:
+  fluent-bit.yaml: |
+    pipeline:
+      filters:
+      - buffer: true
+        emitter_mem_buf_limit: 100MB
+        emitter_name: system_container_logs_multiline
+        flush_ms: 500
+        match_regex: kube-pod_.*|kube_kube-system_*|kube_istio-system_*|kube_knative-serving_*|kube_gke-system_*|kube_config-management-system_*|kube_gmp-system_*|kube_gke-managed-cim_*|kube_gke-managed-volumepopulator_*|kube_gke-managed-checkpointing_*|kube_gke-managed-lustrecsi_*|kube_gke-managed-otel_*|kube_gke-managed-mldiagnostics_*|kube_gke-managed-networking-dra-driver_*|kube_gke-managed-pod-snapshots_*|kube_gke-managed-slurm_*
+        multiline.key_content: message
+        multiline.parser: go
+        name: multiline
+      - Call: cb_filter
+        Match: kube_kube-system_fluentbit-gke_fluentbit
+        Script: /fluent-bit/lua-filters/rate_limiter.lua
+        name: lua
+      - Call: rate_limit
+        Match: kube_kube-system_fluentbit-gke_fluentbit
+        Script: /fluent-bit/lua-filters/rate_limiter.lua
+        name: lua
+      - Alias: redact-kubelet-lua
+        Call: redact_sensitive_info
+        Match: kubelet
+        Script: redact_kubelet.lua
+        name: lua
+      - Alias: kubelet_remove_cmdline
+        Match: kubelet
+        Remove: _CMDLINE
+        name: modify
+      - Call: processContainerdLogLevel
+        Match: container-runtime
+        Script: /fluent-bit/lua-filters/parser.lua
+        name: lua
+      - Hard_rename: log message
+        Match: '*'
+        name: modify
+      - Key_Name: message
+        Match: kube_*
+        Parser: json
+        Reserve_Data: true
+        name: parser
+      - Copy: level severity
+        Match: kube_*
+        name: modify
+      - Annotations: false
+        Buffer_Size: 2MB
+        DNS_Retries: 3
+        DNS_Wait_Time: 10
+        Kube_CA_File: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+        Kube_Meta_Cache_TTL: 30
+        Kube_Tag_Prefix: kube_
+        Kube_Token_File: /var/run/secrets/kubernetes.io/serviceaccount/token
+        Kube_URL: https://${KUBERNETES_SERVICE_HOST}:${KUBERNETES_SERVICE_PORT}
+        Kubelet_Host: ${HOST_IP}
+        Kubelet_Port: 10250
+        Labels: true
+        Match: kube_*
+        Owner_References: true
+        Regex_Parser: k8s-filter-tag-parser
+        Use_Kubelet: 'On'
+        name: kubernetes
+      - Annotations: false
+        Buffer_Size: 2MB
+        DNS_Retries: 3
+        DNS_Wait_Time: 10
+        Kube_CA_File: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+        Kube_Meta_Cache_TTL: 30
+        Kube_Tag_Prefix: kube-pod_
+        Kube_Token_File: /var/run/secrets/kubernetes.io/serviceaccount/token
+        Kube_URL: https://${KUBERNETES_SERVICE_HOST}:${KUBERNETES_SERVICE_PORT}
+        Kubelet_Host: ${HOST_IP}
+        Kubelet_Port: 10250
+        Labels: true
+        Match: kube-pod_*
+        Owner_References: false
+        Regex_Parser: k8s-filter-tag-parser-gvisor
+        Use_Kubelet: 'On'
+        name: kubernetes
+      - Alias: parser
+        Call: processRecord
+        Match: '*'
+        Script: /fluent-bit/lua-filters/parser.lua
+        name: lua
+      inputs:
+      - Alias: kube_kube-system_fluentbit-gke_fluentbit
+        Buffer_Max_Size: 5MB
+        DB: /var/lib/google-fluentbit/pos-files/fluentbit.db
+        Mem_Buf_Limit: 10MB
+        Parser: fluentbit
+        Path: /var/log/containers/*_kube-system_fluentbit-[0-9a-f]*.log
+        Read_from_Head: true
+        Tag: kube_kube-system_fluentbit-gke_fluentbit
+        name: tail
+      - Alias: kube_containers_kube-system
+        Buffer_Chunk_Size: 1MB
+        Buffer_Max_Size: 1MB
+        DB: /var/lib/google-fluentbit/pos-files/flb_kube_kube-system.db
+        Exclude_Path: /var/log/containers/*_kube-system_fluentbit-[0-9a-f]*.log
+        Mem_Buf_Limit: 5MB
+        Parser: containerd
+        Path: /var/log/containers/*_kube-system_*.log
+        Read_from_Head: true
+        Refresh_Interval: 5
+        Rotate_Wait: 15
+        Skip_Long_Lines: true
+        Tag: kube_<namespace_name>_<pod_name>_<container_name>
+        Tag_Regex: (?<pod_name>[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*)_(?<namespace_name>[^_]+)_(?<container_name>.+)-
+        name: tail
+      - Alias: kube_containers_istio-system
+        Buffer_Chunk_Size: 1MB
+        Buffer_Max_Size: 1MB
+        DB: /var/lib/google-fluentbit/pos-files/flb_kube_istio-system.db
+        Exclude_Path: /var/log/containers/*_kube-system_fluentbit-[0-9a-f]*.log
+        Mem_Buf_Limit: 5MB
+        Parser: containerd
+        Path: /var/log/containers/*_istio-system_*.log
+        Read_from_Head: true
+        Refresh_Interval: 5
+        Rotate_Wait: 15
+        Skip_Long_Lines: true
+        Tag: kube_<namespace_name>_<pod_name>_<container_name>
+        Tag_Regex: (?<pod_name>[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*)_(?<namespace_name>[^_]+)_(?<container_name>.+)-
+        name: tail
+      - Alias: kube_containers_knative-serving
+        Buffer_Chunk_Size: 1MB
+        Buffer_Max_Size: 1MB
+        DB: /var/lib/google-fluentbit/pos-files/flb_kube_knative-serving.db
+        Exclude_Path: /var/log/containers/*_kube-system_fluentbit-[0-9a-f]*.log
+        Mem_Buf_Limit: 5MB
+        Parser: containerd
+        Path: /var/log/containers/*_knative-serving_*.log
+        Read_from_Head: true
+        Refresh_Interval: 5
+        Rotate_Wait: 15
+        Skip_Long_Lines: true
+        Tag: kube_<namespace_name>_<pod_name>_<container_name>
+        Tag_Regex: (?<pod_name>[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*)_(?<namespace_name>[^_]+)_(?<container_name>.+)-
+        name: tail
+      - Alias: kube_containers_gke-system
+        Buffer_Chunk_Size: 1MB
+        Buffer_Max_Size: 1MB
+        DB: /var/lib/google-fluentbit/pos-files/flb_kube_gke-system.db
+        Exclude_Path: /var/log/containers/*_kube-system_fluentbit-[0-9a-f]*.log
+        Mem_Buf_Limit: 5MB
+        Parser: containerd
+        Path: /var/log/containers/*_gke-system_*.log
+        Read_from_Head: true
+        Refresh_Interval: 5
+        Rotate_Wait: 15
+        Skip_Long_Lines: true
+        Tag: kube_<namespace_name>_<pod_name>_<container_name>
+        Tag_Regex: (?<pod_name>[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*)_(?<namespace_name>[^_]+)_(?<container_name>.+)-
+        name: tail
+      - Alias: kube_containers_config-management-system
+        Buffer_Chunk_Size: 1MB
+        Buffer_Max_Size: 1MB
+        DB: /var/lib/google-fluentbit/pos-files/flb_kube_config-management-system.db
+        Exclude_Path: /var/log/containers/*_kube-system_fluentbit-[0-9a-f]*.log
+        Mem_Buf_Limit: 5MB
+        Parser: containerd
+        Path: /var/log/containers/*_config-management-system_*.log
+        Read_from_Head: true
+        Refresh_Interval: 5
+        Rotate_Wait: 15
+        Skip_Long_Lines: true
+        Tag: kube_<namespace_name>_<pod_name>_<container_name>
+        Tag_Regex: (?<pod_name>[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*)_(?<namespace_name>[^_]+)_(?<container_name>.+)-
+        name: tail
+      - Alias: kube_containers_gmp-system
+        Buffer_Chunk_Size: 1MB
+        Buffer_Max_Size: 1MB
+        DB: /var/lib/google-fluentbit/pos-files/flb_kube_gmp-system.db
+        Exclude_Path: /var/log/containers/*_kube-system_fluentbit-[0-9a-f]*.log
+        Mem_Buf_Limit: 5MB
+        Parser: containerd
+        Path: /var/log/containers/*_gmp-system_*.log
+        Read_from_Head: true
+        Refresh_Interval: 5
+        Rotate_Wait: 15
+        Skip_Long_Lines: true
+        Tag: kube_<namespace_name>_<pod_name>_<container_name>
+        Tag_Regex: (?<pod_name>[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*)_(?<namespace_name>[^_]+)_(?<container_name>.+)-
+        name: tail
+      - Alias: kube_containers_gke-managed-cim
+        Buffer_Chunk_Size: 1MB
+        Buffer_Max_Size: 1MB
+        DB: /var/lib/google-fluentbit/pos-files/flb_kube_gke-managed-cim.db
+        Exclude_Path: /var/log/containers/*_kube-system_fluentbit-[0-9a-f]*.log
+        Mem_Buf_Limit: 5MB
+        Parser: containerd
+        Path: /var/log/containers/*_gke-managed-cim_*.log
+        Read_from_Head: true
+        Refresh_Interval: 5
+        Rotate_Wait: 15
+        Skip_Long_Lines: true
+        Tag: kube_<namespace_name>_<pod_name>_<container_name>
+        Tag_Regex: (?<pod_name>[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*)_(?<namespace_name>[^_]+)_(?<container_name>.+)-
+        name: tail
+      - Alias: kube_containers_gke-managed-volumepopulator
+        Buffer_Chunk_Size: 1MB
+        Buffer_Max_Size: 1MB
+        DB: /var/lib/google-fluentbit/pos-files/flb_kube_gke-managed-volumepopulator.db
+        Exclude_Path: /var/log/containers/*_kube-system_fluentbit-[0-9a-f]*.log
+        Mem_Buf_Limit: 5MB
+        Parser: containerd
+        Path: /var/log/containers/*_gke-managed-volumepopulator_*.log
+        Read_from_Head: true
+        Refresh_Interval: 5
+        Rotate_Wait: 15
+        Skip_Long_Lines: true
+        Tag: kube_<namespace_name>_<pod_name>_<container_name>
+        Tag_Regex: (?<pod_name>[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*)_(?<namespace_name>[^_]+)_(?<container_name>.+)-
+        name: tail
+      - Alias: kube_containers_gke-managed-checkpointing
+        Buffer_Chunk_Size: 1MB
+        Buffer_Max_Size: 1MB
+        DB: /var/lib/google-fluentbit/pos-files/flb_kube_gke-managed-checkpointing.db
+        Exclude_Path: /var/log/containers/*_kube-system_fluentbit-[0-9a-f]*.log
+        Mem_Buf_Limit: 5MB
+        Parser: containerd
+        Path: /var/log/containers/*_gke-managed-checkpointing_*.log
+        Read_from_Head: true
+        Refresh_Interval: 5
+        Rotate_Wait: 15
+        Skip_Long_Lines: true
+        Tag: kube_<namespace_name>_<pod_name>_<container_name>
+        Tag_Regex: (?<pod_name>[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*)_(?<namespace_name>[^_]+)_(?<container_name>.+)-
+        name: tail
+      - Alias: kube_containers_gke-managed-lustrecsi
+        Buffer_Chunk_Size: 1MB
+        Buffer_Max_Size: 1MB
+        DB: /var/lib/google-fluentbit/pos-files/flb_kube_gke-managed-lustrecsi.db
+        Exclude_Path: /var/log/containers/*_kube-system_fluentbit-[0-9a-f]*.log
+        Mem_Buf_Limit: 5MB
+        Parser: containerd
+        Path: /var/log/containers/*_gke-managed-lustrecsi_*.log
+        Read_from_Head: true
+        Refresh_Interval: 5
+        Rotate_Wait: 15
+        Skip_Long_Lines: true
+        Tag: kube_<namespace_name>_<pod_name>_<container_name>
+        Tag_Regex: (?<pod_name>[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*)_(?<namespace_name>[^_]+)_(?<container_name>.+)-
+        name: tail
+      - Alias: kube_containers_gke-managed-otel
+        Buffer_Chunk_Size: 1MB
+        Buffer_Max_Size: 1MB
+        DB: /var/lib/google-fluentbit/pos-files/flb_kube_gke-managed-otel.db
+        Exclude_Path: /var/log/containers/*_kube-system_fluentbit-[0-9a-f]*.log
+        Mem_Buf_Limit: 5MB
+        Parser: containerd
+        Path: /var/log/containers/*_gke-managed-otel_*.log
+        Read_from_Head: true
+        Refresh_Interval: 5
+        Rotate_Wait: 15
+        Skip_Long_Lines: true
+        Tag: kube_<namespace_name>_<pod_name>_<container_name>
+        Tag_Regex: (?<pod_name>[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*)_(?<namespace_name>[^_]+)_(?<container_name>.+)-
+        name: tail
+      - Alias: kube_containers_gke-managed-mldiagnostics
+        Buffer_Chunk_Size: 1MB
+        Buffer_Max_Size: 1MB
+        DB: /var/lib/google-fluentbit/pos-files/flb_kube_gke-managed-mldiagnostics.db
+        Exclude_Path: /var/log/containers/*_kube-system_fluentbit-[0-9a-f]*.log
+        Mem_Buf_Limit: 5MB
+        Parser: containerd
+        Path: /var/log/containers/*_gke-managed-mldiagnostics_*.log
+        Read_from_Head: true
+        Refresh_Interval: 5
+        Rotate_Wait: 15
+        Skip_Long_Lines: true
+        Tag: kube_<namespace_name>_<pod_name>_<container_name>
+        Tag_Regex: (?<pod_name>[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*)_(?<namespace_name>[^_]+)_(?<container_name>.+)-
+        name: tail
+      - Alias: kube_containers_gke-managed-networking-dra-driver
+        Buffer_Chunk_Size: 1MB
+        Buffer_Max_Size: 1MB
+        DB: /var/lib/google-fluentbit/pos-files/flb_kube_gke-managed-networking-dra-driver.db
+        Exclude_Path: /var/log/containers/*_kube-system_fluentbit-[0-9a-f]*.log
+        Mem_Buf_Limit: 5MB
+        Parser: containerd
+        Path: /var/log/containers/*_gke-managed-networking-dra-driver_*.log
+        Read_from_Head: true
+        Refresh_Interval: 5
+        Rotate_Wait: 15
+        Skip_Long_Lines: true
+        Tag: kube_<namespace_name>_<pod_name>_<container_name>
+        Tag_Regex: (?<pod_name>[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*)_(?<namespace_name>[^_]+)_(?<container_name>.+)-
+        name: tail
+      - Alias: kube_containers_gke-managed-pod-snapshots
+        Buffer_Chunk_Size: 1MB
+        Buffer_Max_Size: 1MB
+        DB: /var/lib/google-fluentbit/pos-files/flb_kube_gke-managed-pod-snapshots.db
+        Exclude_Path: /var/log/containers/*_kube-system_fluentbit-[0-9a-f]*.log
+        Mem_Buf_Limit: 5MB
+        Parser: containerd
+        Path: /var/log/containers/*_gke-managed-pod-snapshots_*.log
+        Read_from_Head: true
+        Refresh_Interval: 5
+        Rotate_Wait: 15
+        Skip_Long_Lines: true
+        Tag: kube_<namespace_name>_<pod_name>_<container_name>
+        Tag_Regex: (?<pod_name>[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*)_(?<namespace_name>[^_]+)_(?<container_name>.+)-
+        name: tail
+      - Alias: kube_containers_gke-managed-slurm
+        Buffer_Chunk_Size: 1MB
+        Buffer_Max_Size: 1MB
+        DB: /var/lib/google-fluentbit/pos-files/flb_kube_gke-managed-slurm.db
+        Exclude_Path: /var/log/containers/*_kube-system_fluentbit-[0-9a-f]*.log
+        Mem_Buf_Limit: 5MB
+        Parser: containerd
+        Path: /var/log/containers/*_gke-managed-slurm_*.log
+        Read_from_Head: true
+        Refresh_Interval: 5
+        Rotate_Wait: 15
+        Skip_Long_Lines: true
+        Tag: kube_<namespace_name>_<pod_name>_<container_name>
+        Tag_Regex: (?<pod_name>[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*)_(?<namespace_name>[^_]+)_(?<container_name>.+)-
+        name: tail
+      - Alias: kube_containers
+        Buffer_Chunk_Size: 1MB
+        Buffer_Max_Size: 20MB
+        DB: /var/lib/google-fluentbit/pos-files/flb_kube.db
+        Exclude_Path: /var/log/containers/*_kube-system_*.log,/var/log/containers/*_istio-system_*.log,/var/log/containers/*_knative-serving_*.log,/var/log/containers/*_gke-system_*.log,/var/log/containers/*_config-management-system_*.log,/var/log/containers/*_gmp-system_*.log,/var/log/containers/*_gke-managed-cim_*.log,/var/log/containers/*_gke-managed-volumepopulator_*.log,/var/log/containers/*_gke-managed-checkpointing_*.log,/var/log/containers/*_gke-managed-lustrecsi_*.log,/var/log/containers/*_gke-managed-otel_*.log,/var/log/containers/*_gke-managed-mldiagnostics_*.log,/var/log/containers/*_gke-managed-networking-dra-driver_*.log,/var/log/containers/*_gke-managed-pod-snapshots_*.log,/var/log/containers/*_gke-managed-slurm_*.log
+        Mem_Buf_Limit: 100MB
+        Parser: containerd
+        Path: /var/log/containers/*.log
+        Read_from_Head: true
+        Refresh_Interval: 1
+        Rotate_Wait: 15
+        Skip_Long_Lines: true
+        Tag: kube_<namespace_name>_<pod_name>_<container_name>
+        Tag_Regex: (?<pod_name>[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*)_(?<namespace_name>[^_]+)_(?<container_name>.+)-
+        Threaded: true
+        name: tail
+        processors:
+          logs:
+          - buffer: true
+            emitter_mem_buf_limit: 200MB
+            emitter_name: customer_logs_multiline_processor
+            flush_ms: 500
+            multiline.key_content: message
+            multiline.parser: go,java,python,php,custom_ruby,dart
+            name: multiline
+      - Alias: gvisor_kube-system
+        Buffer_Max_Size: 1MB
+        DB: /var/lib/google-fluentbit/pos-files/gvisor_kube-system.db
+        Key: message
+        Mem_Buf_Limit: 1MB
+        Path: /var/log/pods/kube-system_*/*
+        Read_from_Head: true
+        Refresh_Interval: 5
+        Skip_Long_Lines: true
+        Tag: kube-pod_<namespace_name>_<pod_name>_<runtime>
+        Tag_Regex: \/var\/log\/pods\/(?<namespace_name>[^_]+)_(?<pod_name>[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*)_(?<id>[\-a-z0-9]+)\/(?<runtime>[a-z]+)\.log
+        name: tail
+      - Alias: gvisor_istio-system
+        Buffer_Max_Size: 1MB
+        DB: /var/lib/google-fluentbit/pos-files/gvisor_istio-system.db
+        Key: message
+        Mem_Buf_Limit: 1MB
+        Path: /var/log/pods/istio-system_*/*
+        Read_from_Head: true
+        Refresh_Interval: 5
+        Skip_Long_Lines: true
+        Tag: kube-pod_<namespace_name>_<pod_name>_<runtime>
+        Tag_Regex: \/var\/log\/pods\/(?<namespace_name>[^_]+)_(?<pod_name>[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*)_(?<id>[\-a-z0-9]+)\/(?<runtime>[a-z]+)\.log
+        name: tail
+      - Alias: gvisor_knative-serving
+        Buffer_Max_Size: 1MB
+        DB: /var/lib/google-fluentbit/pos-files/gvisor_knative-serving.db
+        Key: message
+        Mem_Buf_Limit: 1MB
+        Path: /var/log/pods/knative-serving_*/*
+        Read_from_Head: true
+        Refresh_Interval: 5
+        Skip_Long_Lines: true
+        Tag: kube-pod_<namespace_name>_<pod_name>_<runtime>
+        Tag_Regex: \/var\/log\/pods\/(?<namespace_name>[^_]+)_(?<pod_name>[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*)_(?<id>[\-a-z0-9]+)\/(?<runtime>[a-z]+)\.log
+        name: tail
+      - Alias: gvisor_gke-system
+        Buffer_Max_Size: 1MB
+        DB: /var/lib/google-fluentbit/pos-files/gvisor_gke-system.db
+        Key: message
+        Mem_Buf_Limit: 1MB
+        Path: /var/log/pods/gke-system_*/*
+        Read_from_Head: true
+        Refresh_Interval: 5
+        Skip_Long_Lines: true
+        Tag: kube-pod_<namespace_name>_<pod_name>_<runtime>
+        Tag_Regex: \/var\/log\/pods\/(?<namespace_name>[^_]+)_(?<pod_name>[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*)_(?<id>[\-a-z0-9]+)\/(?<runtime>[a-z]+)\.log
+        name: tail
+      - Alias: gvisor_config-management-system
+        Buffer_Max_Size: 1MB
+        DB: /var/lib/google-fluentbit/pos-files/gvisor_config-management-system.db
+        Key: message
+        Mem_Buf_Limit: 1MB
+        Path: /var/log/pods/config-management-system_*/*
+        Read_from_Head: true
+        Refresh_Interval: 5
+        Skip_Long_Lines: true
+        Tag: kube-pod_<namespace_name>_<pod_name>_<runtime>
+        Tag_Regex: \/var\/log\/pods\/(?<namespace_name>[^_]+)_(?<pod_name>[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*)_(?<id>[\-a-z0-9]+)\/(?<runtime>[a-z]+)\.log
+        name: tail
+      - Alias: gvisor_gmp-system
+        Buffer_Max_Size: 1MB
+        DB: /var/lib/google-fluentbit/pos-files/gvisor_gmp-system.db
+        Key: message
+        Mem_Buf_Limit: 1MB
+        Path: /var/log/pods/gmp-system_*/*
+        Read_from_Head: true
+        Refresh_Interval: 5
+        Skip_Long_Lines: true
+        Tag: kube-pod_<namespace_name>_<pod_name>_<runtime>
+        Tag_Regex: \/var\/log\/pods\/(?<namespace_name>[^_]+)_(?<pod_name>[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*)_(?<id>[\-a-z0-9]+)\/(?<runtime>[a-z]+)\.log
+        name: tail
+      - Alias: gvisor_gke-managed-cim
+        Buffer_Max_Size: 1MB
+        DB: /var/lib/google-fluentbit/pos-files/gvisor_gke-managed-cim.db
+        Key: message
+        Mem_Buf_Limit: 1MB
+        Path: /var/log/pods/gke-managed-cim_*/*
+        Read_from_Head: true
+        Refresh_Interval: 5
+        Skip_Long_Lines: true
+        Tag: kube-pod_<namespace_name>_<pod_name>_<runtime>
+        Tag_Regex: \/var\/log\/pods\/(?<namespace_name>[^_]+)_(?<pod_name>[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*)_(?<id>[\-a-z0-9]+)\/(?<runtime>[a-z]+)\.log
+        name: tail
+      - Alias: gvisor_gke-managed-volumepopulator
+        Buffer_Max_Size: 1MB
+        DB: /var/lib/google-fluentbit/pos-files/gvisor_gke-managed-volumepopulator.db
+        Key: message
+        Mem_Buf_Limit: 1MB
+        Path: /var/log/pods/gke-managed-volumepopulator_*/*
+        Read_from_Head: true
+        Refresh_Interval: 5
+        Skip_Long_Lines: true
+        Tag: kube-pod_<namespace_name>_<pod_name>_<runtime>
+        Tag_Regex: \/var\/log\/pods\/(?<namespace_name>[^_]+)_(?<pod_name>[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*)_(?<id>[\-a-z0-9]+)\/(?<runtime>[a-z]+)\.log
+        name: tail
+      - Alias: gvisor_gke-managed-checkpointing
+        Buffer_Max_Size: 1MB
+        DB: /var/lib/google-fluentbit/pos-files/gvisor_gke-managed-checkpointing.db
+        Key: message
+        Mem_Buf_Limit: 1MB
+        Path: /var/log/pods/gke-managed-checkpointing_*/*
+        Read_from_Head: true
+        Refresh_Interval: 5
+        Skip_Long_Lines: true
+        Tag: kube-pod_<namespace_name>_<pod_name>_<runtime>
+        Tag_Regex: \/var\/log\/pods\/(?<namespace_name>[^_]+)_(?<pod_name>[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*)_(?<id>[\-a-z0-9]+)\/(?<runtime>[a-z]+)\.log
+        name: tail
+      - Alias: gvisor_gke-managed-lustrecsi
+        Buffer_Max_Size: 1MB
+        DB: /var/lib/google-fluentbit/pos-files/gvisor_gke-managed-lustrecsi.db
+        Key: message
+        Mem_Buf_Limit: 1MB
+        Path: /var/log/pods/gke-managed-lustrecsi_*/*
+        Read_from_Head: true
+        Refresh_Interval: 5
+        Skip_Long_Lines: true
+        Tag: kube-pod_<namespace_name>_<pod_name>_<runtime>
+        Tag_Regex: \/var\/log\/pods\/(?<namespace_name>[^_]+)_(?<pod_name>[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*)_(?<id>[\-a-z0-9]+)\/(?<runtime>[a-z]+)\.log
+        name: tail
+      - Alias: gvisor_gke-managed-otel
+        Buffer_Max_Size: 1MB
+        DB: /var/lib/google-fluentbit/pos-files/gvisor_gke-managed-otel.db
+        Key: message
+        Mem_Buf_Limit: 1MB
+        Path: /var/log/pods/gke-managed-otel_*/*
+        Read_from_Head: true
+        Refresh_Interval: 5
+        Skip_Long_Lines: true
+        Tag: kube-pod_<namespace_name>_<pod_name>_<runtime>
+        Tag_Regex: \/var\/log\/pods\/(?<namespace_name>[^_]+)_(?<pod_name>[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*)_(?<id>[\-a-z0-9]+)\/(?<runtime>[a-z]+)\.log
+        name: tail
+      - Alias: gvisor_gke-managed-mldiagnostics
+        Buffer_Max_Size: 1MB
+        DB: /var/lib/google-fluentbit/pos-files/gvisor_gke-managed-mldiagnostics.db
+        Key: message
+        Mem_Buf_Limit: 1MB
+        Path: /var/log/pods/gke-managed-mldiagnostics_*/*
+        Read_from_Head: true
+        Refresh_Interval: 5
+        Skip_Long_Lines: true
+        Tag: kube-pod_<namespace_name>_<pod_name>_<runtime>
+        Tag_Regex: \/var\/log\/pods\/(?<namespace_name>[^_]+)_(?<pod_name>[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*)_(?<id>[\-a-z0-9]+)\/(?<runtime>[a-z]+)\.log
+        name: tail
+      - Alias: gvisor_gke-managed-networking-dra-driver
+        Buffer_Max_Size: 1MB
+        DB: /var/lib/google-fluentbit/pos-files/gvisor_gke-managed-networking-dra-driver.db
+        Key: message
+        Mem_Buf_Limit: 1MB
+        Path: /var/log/pods/gke-managed-networking-dra-driver_*/*
+        Read_from_Head: true
+        Refresh_Interval: 5
+        Skip_Long_Lines: true
+        Tag: kube-pod_<namespace_name>_<pod_name>_<runtime>
+        Tag_Regex: \/var\/log\/pods\/(?<namespace_name>[^_]+)_(?<pod_name>[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*)_(?<id>[\-a-z0-9]+)\/(?<runtime>[a-z]+)\.log
+        name: tail
+      - Alias: gvisor_gke-managed-pod-snapshots
+        Buffer_Max_Size: 1MB
+        DB: /var/lib/google-fluentbit/pos-files/gvisor_gke-managed-pod-snapshots.db
+        Key: message
+        Mem_Buf_Limit: 1MB
+        Path: /var/log/pods/gke-managed-pod-snapshots_*/*
+        Read_from_Head: true
+        Refresh_Interval: 5
+        Skip_Long_Lines: true
+        Tag: kube-pod_<namespace_name>_<pod_name>_<runtime>
+        Tag_Regex: \/var\/log\/pods\/(?<namespace_name>[^_]+)_(?<pod_name>[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*)_(?<id>[\-a-z0-9]+)\/(?<runtime>[a-z]+)\.log
+        name: tail
+      - Alias: gvisor_gke-managed-slurm
+        Buffer_Max_Size: 1MB
+        DB: /var/lib/google-fluentbit/pos-files/gvisor_gke-managed-slurm.db
+        Key: message
+        Mem_Buf_Limit: 1MB
+        Path: /var/log/pods/gke-managed-slurm_*/*
+        Read_from_Head: true
+        Refresh_Interval: 5
+        Skip_Long_Lines: true
+        Tag: kube-pod_<namespace_name>_<pod_name>_<runtime>
+        Tag_Regex: \/var\/log\/pods\/(?<namespace_name>[^_]+)_(?<pod_name>[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*)_(?<id>[\-a-z0-9]+)\/(?<runtime>[a-z]+)\.log
+        name: tail
+      - Alias: gvisor
+        Buffer_Max_Size: 1MB
+        DB: /var/lib/google-fluentbit/pos-files/gvisor.db
+        Exclude_Path: /var/log/pods/*/*_panic.log,/var/log/pods/kube-system_*/*,/var/log/pods/istio-system_*/*,/var/log/pods/knative-serving_*/*,/var/log/pods/gke-system_*/*,/var/log/pods/config-management-system_*/*,/var/log/pods/gmp-system_*/*,/var/log/pods/gke-managed-cim_*/*,/var/log/pods/gke-managed-volumepopulator_*/*,/var/log/pods/gke-managed-checkpointing_*/*,/var/log/pods/gke-managed-lustrecsi_*/*,/var/log/pods/gke-managed-otel_*/*,/var/log/pods/gke-managed-mldiagnostics_*/*,/var/log/pods/gke-managed-networking-dra-driver_*/*,/var/log/pods/gke-managed-pod-snapshots_*/*,/var/log/pods/gke-managed-slurm_*/*
+        Key: message
+        Mem_Buf_Limit: 1MB
+        Path: /var/log/pods/*/*.log
+        Read_from_Head: true
+        Refresh_Interval: 5
+        Skip_Long_Lines: true
+        Tag: kube-pod_<namespace_name>_<pod_name>_<runtime>
+        Tag_Regex: \/var\/log\/pods\/(?<namespace_name>[^_]+)_(?<pod_name>[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*)_(?<id>[\-a-z0-9]+)\/(?<runtime>[a-z]+)\.log
+        name: tail
+      - Alias: gvisor_panic
+        Buffer_Max_Size: 1MB
+        DB: /var/lib/google-fluentbit/pos-files/gvisor_panic.db
+        Exclude_Path: /var/log/pods/kube-system_*/*,/var/log/pods/istio-system_*/*,/var/log/pods/knative-serving_*/*,/var/log/pods/gke-system_*/*,/var/log/pods/config-management-system_*/*,/var/log/pods/gmp-system_*/*,/var/log/pods/gke-managed-cim_*/*,/var/log/pods/gke-managed-volumepopulator_*/*,/var/log/pods/gke-managed-checkpointing_*/*,/var/log/pods/gke-managed-lustrecsi_*/*,/var/log/pods/gke-managed-otel_*/*,/var/log/pods/gke-managed-mldiagnostics_*/*,/var/log/pods/gke-managed-networking-dra-driver_*/*,/var/log/pods/gke-managed-pod-snapshots_*/*,/var/log/pods/gke-managed-slurm_*/*
+        Key: message
+        Mem_Buf_Limit: 1MB
+        Path: /var/log/pods/*/*_panic.log
+        Read_from_Head: true
+        Refresh_Interval: 5
+        Skip_Long_Lines: true
+        Tag: kube-pod_<namespace_name>_<pod_name>_<runtime>panic
+        Tag_Regex: \/var\/log\/pods\/(?<namespace_name>[^_]+)_(?<pod_name>[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*)_(?<id>[\-a-z0-9]+)\/(?<runtime>[a-z]+)_panic\.log
+        name: tail
+      - Alias: startupscript
+        DB: /var/lib/google-fluentbit/pos-files/startupscript.db
+        Parser: syslog
+        Path: /var/log/startupscript.log
+        Tag: startupscript
+        name: tail
+      - Alias: policy-action
+        DB: /var/lib/google-fluentbit/pos-files/policy-action.db
+        Parser: network-log
+        Path: /var/log/network/policy_action.log
+        Read_from_Head: true
+        Refresh_Interval: 5
+        Skip_Long_Lines: true
+        Tag: policy-action
+        name: tail
+      - Alias: kube-proxy
+        Buffer_Max_Size: 1MB
+        DB: /var/lib/google-fluentbit/pos-files/kube-proxy.db
+        Mem_Buf_Limit: 1MB
+        Parser: glog
+        Path: /var/log/kube-proxy.log
+        Read_from_Head: true
+        Tag: kube-proxy
+        name: tail
+      - Alias: docker
+        DB: /var/lib/google-fluentbit/pos-files/docker.db
+        Mem_Buf_Limit: 1MB
+        Path: /var/log/journal
+        Systemd_Filter: _SYSTEMD_UNIT=docker.service
+        Tag: docker
+        name: systemd
+      - Alias: kubelet
+        DB: /var/lib/google-fluentbit/pos-files/kubelet.db
+        Mem_Buf_Limit: 1MB
+        Path: /var/log/journal
+        Systemd_Filter: _SYSTEMD_UNIT=kubelet.service
+        Tag: kubelet
+        name: systemd
+      - Alias: kube-node-installation
+        DB: /var/lib/google-fluentbit/pos-files/kube-node-installation.db
+        Mem_Buf_Limit: 1MB
+        Path: /var/log/journal
+        Systemd_Filter: _SYSTEMD_UNIT=kube-node-installation.service
+        Tag: kube-node-installation
+        name: systemd
+      - Alias: kube-node-configuration
+        DB: /var/lib/google-fluentbit/pos-files/kube-node-configuration.db
+        Mem_Buf_Limit: 1MB
+        Path: /var/log/journal
+        Systemd_Filter: _SYSTEMD_UNIT=kube-node-configuration.service
+        Tag: kube-node-configuration
+        name: systemd
+      - Alias: kube-logrotate
+        DB: /var/lib/google-fluentbit/pos-files/kube-logrotate.db
+        Mem_Buf_Limit: 1MB
+        Path: /var/log/journal
+        Systemd_Filter: _SYSTEMD_UNIT=kube-logrotate.service
+        Tag: kube-logrotate
+        name: systemd
+      - Alias: node-problem-detector
+        DB: /var/lib/google-fluentbit/pos-files/node-problem-detector.db
+        Mem_Buf_Limit: 1MB
+        Path: /var/log/journal
+        Systemd_Filter: _SYSTEMD_UNIT=node-problem-detector.service
+        Tag: node-problem-detector
+        name: systemd
+      - Alias: kube-container-runtime-monitor
+        DB: /var/lib/google-fluentbit/pos-files/kube-container-runtime-monitor.db
+        Mem_Buf_Limit: 1MB
+        Path: /var/log/journal
+        Systemd_Filter: _SYSTEMD_UNIT=kube-container-runtime-monitor.service
+        Tag: kube-container-runtime-monitor
+        name: systemd
+      - Alias: kubelet-monitor
+        DB: /var/lib/google-fluentbit/pos-files/kubelet-monitor.db
+        Mem_Buf_Limit: 1MB
+        Path: /var/log/journal
+        Systemd_Filter: _SYSTEMD_UNIT=kubelet-monitor.service
+        Tag: kubelet-monitor
+        name: systemd
+      - Alias: gcfsd
+        DB: /var/lib/google-fluentbit/pos-files/gcfsd.db
+        Mem_Buf_Limit: 1MB
+        Path: /var/log/journal
+        Systemd_Filter: _SYSTEMD_UNIT=gcfsd.service
+        Tag: gcfsd
+        name: systemd
+      - Alias: gcfs-snapshotter
+        DB: /var/lib/google-fluentbit/pos-files/gcfs-snapshotter.db
+        Mem_Buf_Limit: 1MB
+        Path: /var/log/journal
+        Systemd_Filter: _SYSTEMD_UNIT=gcfs-snapshotter.service
+        Tag: gcfs-snapshotter
+        name: systemd
+      - Alias: criproxy
+        DB: /var/lib/google-fluentbit/pos-files/criproxy.db
+        Mem_Buf_Limit: 1MB
+        Path: /var/log/journal
+        Systemd_Filter: _SYSTEMD_UNIT=criproxy.service
+        Tag: criproxy
+        name: systemd
+      - Alias: container-runtime
+        DB: /var/lib/google-fluentbit/pos-files/container-runtime.db
+        Mem_Buf_Limit: 1MB
+        Path: /var/log/journal
+        Systemd_Filter: _SYSTEMD_UNIT=containerd.service
+        Tag: container-runtime
+        name: systemd
+      outputs:
+      - Alias: node-logging-k8s-container
+        Match_Regex: kube_.*
+        Resource: k8s_container
+        Retry_Limit: 3
+        cloud_logging_base_url: https://logging.googleapis.com:443
+        export_to_project_id: timbai-gke-dev
+        http_request_key: httpRequest
+        k8s_cluster_location: us-central1-a
+        k8s_cluster_name: fluent-bit-agent-x86
+        name: stackdriver
+        severity_key: severity
+        text_payload_key: textPayload
+        tls: true
+        trace_sampled_key: logging.googleapis.com/trace_sampled
+        workers: 2
+      - Alias: node-logging-k8s-pod
+        Match_Regex: kube-pod_.*
+        Resource: k8s_pod
+        Retry_Limit: 3
+        cloud_logging_base_url: https://logging.googleapis.com:443
+        export_to_project_id: timbai-gke-dev
+        http_request_key: httpRequest
+        k8s_cluster_location: us-central1-a
+        k8s_cluster_name: fluent-bit-agent-x86
+        name: stackdriver
+        severity_key: severity
+        text_payload_key: textPayload
+        tls: true
+        trace_sampled_key: logging.googleapis.com/trace_sampled
+        workers: 2
+      - Alias: node-logging-k8s-node
+        Match_Regex: ^(?!kube(_|-pod_)).*$
+        Resource: k8s_node
+        Retry_Limit: 3
+        cloud_logging_base_url: https://logging.googleapis.com:443
+        export_to_project_id: timbai-gke-dev
+        http_request_key: httpRequest
+        k8s_cluster_location: us-central1-a
+        k8s_cluster_name: fluent-bit-agent-x86
+        name: stackdriver
+        severity_key: severity
+        text_payload_key: textPayload
+        tls: true
+        trace_sampled_key: logging.googleapis.com/trace_sampled
+        workers: 2
+    service:
+      Daemon: false
+      Flush: 5
+      Grace: 120
+      HTTP_Listen: 0.0.0.0
+      HTTP_PORT: 2020
+      HTTP_Server: true
+      Log_Level: info
+      Parsers_File: parsers.conf
+      dns.resolver: legacy
+  parsers.conf: "[PARSER]\n    Name              containerd\n    Format            regex\n
+    \   # The timestamp is described in https://www.rfc-editor.org/rfc/rfc3339#section-5.6\n
+    \   # Containerd logs follow the pattern of CRI Log Format (https://github.com/kubernetes/design-proposals-archive/blob/main/node/kubelet-cri-logging.md):
+    <timestamp> <stream> <tag> <log_content>\n    # F in tag means \"Full Log\", and
+    P means \"Partial Log\".\n    \n    Regex             ^(?<time>[0-9]{4}-[0-9]{2}-[0-9]{2}[Tt
+    ][0-9]{2}:[0-9]{2}:[0-9]{2}(?:\\.[0-9]+)?(?:[Zz]|[+-][0-9]{2}:[0-9]{2}))\\s+(?<stream>stdout|stderr)\\s(F|P)\\s(?<message>.*)$\n
+    \   \n    Time_Key          time\n    Reserve_Data      On\n    Time_Format       %Y-%m-%dT%H:%M:%S.%L%z\n
+    \   Skip_Empty_Values false\n\n[PARSER]\n    Name        json\n    Format      json\n\n[PARSER]\n
+    \   Name        syslog\n    Format      regex\n    Regex       ^\\<(?<pri>[0-9]+)\\>(?<time>[^
+    ]* {1,2}[^ ]* [^ ]*) (?<host>[^ ]*) (?<ident>[a-zA-Z0-9_\\/\\.\\-]*)(?:\\[(?<pid>[0-9]+)\\])?(?:[^\\:]*\\:)?
+    *(?<message>.*)$\n    Time_Key    time\n    Time_Format %b %d %H:%M:%S\n\n[PARSER]\n
+    \   Name        glog\n    Format      regex\n    # We skip the glog timestamp
+    as it doesn't have year (in most cases) and time zone information.\n    # Instead,
+    we rely on the containerd timestamp, which is available for every log line.\n
+    \   Regex       ^(?<severity>\\w)\\d{4}?\\d{4} [^\\s]*\\s+(?<pid>\\d+)\\s+(?<source_file>[^
+    \\]]+)\\:(?<source_line>\\d+)\\]\\s(?<message>.*)$\n\n[PARSER]\n    Name        tsl_tf_cpp\n
+    \   Format      regex\n    # TensorFlow/TSL customizes the Abseil C++ log format
+    to include the full YYYY-MM-DD date and omits the thread ID.\n    Regex       ^\\d{4}-\\d{2}-\\d{2}
+    \\d{2}:\\d{2}:\\d{2}\\.\\d{6}:\\s+(?<severity>[IWEF])\\s+(?<source_file>[^\\s:]+):(?<source_line>\\d+)\\]\\s+(?<message>.*)$\n\n[PARSER]\n
+    \   Name        network-log\n    Format      json\n    Time_Key    timestamp\n
+    \   Time_Format %Y-%m-%dT%H:%M:%S.%L%z\n\n# Example:\n# [2023/01/05 00:01:58]
+    [ info] [output:http:http.0] 127.0.0.1:2021, HTTP status=200\\\n# Rubular: https://screenshot.googleplex.com/8SvHiZJLUkW9idQ\n[PARSER]\n
+    \   Name   fluentbit\n    Format regex\n    \n    Regex  \\[(?<time>[^\\]]+)\\][
+    ]*\\[[ ]*(?<severity>[^\\]]+)\\][ ]*\\[(?<plugin>[^\\]]+)\\] (?<message>.*)\n
+    \   \n    Time_Key time\n    Time_Format %Y/%m/%d %H:%M:%S\n\n\n[PARSER]\n    Name
+    \   k8s-filter-tag-parser\n    Format  regex\n    Regex   ^(?<namespace_name>[^_.]+)_(?<pod_name>[a-z0-9](?:[-a-z0-9]*[a-z0-9])?(?:\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*)_(?<container_name>[^.]+)$\n[PARSER]\n
+    \   Name    k8s-filter-tag-parser-gvisor\n    Format  regex\n    Regex   ^(?<namespace_name>[^_.]+)_(?<pod_name>[a-z0-9](?:[-a-z0-9]*[a-z0-9])?(?:\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*)_(?<container_name>[^.]+)$\n\n\n\n[MULTILINE_PARSER]\n
+    \   # Fluentd rules reference: https://github.com/GoogleCloudPlatform/fluent-plugin-detect-exceptions/blob/master/lib/fluent/plugin/exception_detector.rb#L87\n
+    \   Name          php\n    Type          regex\n    Key_Content   message\n    Flush_Timeout
+    1000\n    Rule          \"start_state\" \"/(?:PHP\\ (?:Notice|Parse\\ error|Fatal\\
+    error|Warning):)|(?:exception\\ '[^']+'\\ with\\ message\\ ')/x\" \"php_stack_begin\"\n
+    \   Rule          \"php_stack_begin\"  \"/^Stack trace:/\"  \"php_stack_frames\"\n
+    \   Rule          \"php_stack_frames\" \"/^#\\d/\"           \"php_stack_frames\"\n
+    \   Rule          \"php_stack_frames\" \"/^\\s+thrown in /\" \"start_state\"\n[MULTILINE_PARSER]\n
+    \   # Fluentbit has built in ruby parser: https://github.com/fluent/fluent-bit/blob/master/src/multiline/flb_ml_parser_ruby.c,
+    but it's not compatible with fluentd rules.\n    # Fluentd rules reference: https://github.com/GoogleCloudPlatform/fluent-plugin-detect-exceptions/blob/master/lib/fluent/plugin/exception_detector.rb#L109\n
+    \   Name          custom_ruby\n    Type          regex\n    Key_Content   message\n
+    \   Flush_Timeout 1000\n    Rule          \"start_state\"             \"/Error
+    \\(.*\\):$/\"          \"ruby_before_rails_trace\"\n    Rule          \"ruby_before_rails_trace\"
+    \"/^  $/\"                    \"ruby\"\n    Rule          \"ruby_before_rails_trace\"
+    \"/^[\\t ]+.*?\\.rb:\\d+:in `/\" \"ruby\"\n    Rule          \"ruby\"                    \"/^[\\t
+    ]+.*?\\.rb:\\d+:in `/\" \"ruby\"\n[MULTILINE_PARSER]\n    # Fluentd rules reference:
+    https://github.com/GoogleCloudPlatform/fluent-plugin-detect-exceptions/blob/master/lib/fluent/plugin/exception_detector.rb#L116\n
+    \   Name          dart\n    Type          regex\n    Key_Content   message\n    Flush_Timeout
+    1000\n    Rule          \"start_state\"           \"/^Unhandled exception:$/\"
+    \               \"dart_exc\"\n    Rule          \"dart_exc\"              \"/^Instance
+    of/\"                          \"dart_stack\"\n    Rule          \"dart_exc\"
+    \             \"/^Exception/\"                            \"dart_stack\"\n    Rule
+    \         \"dart_exc\"              \"/^Bad state/\"                            \"dart_stack\"\n
+    \   Rule          \"dart_exc\"              \"/^IntegerDivisionByZeroException/\"
+    \      \"dart_stack\"\n    Rule          \"dart_exc\"              \"/^Invalid
+    argument/\"                     \"dart_stack\"\n    Rule          \"dart_exc\"
+    \             \"/^RangeError/\"                           \"dart_stack\"\n    Rule
+    \         \"dart_exc\"              \"/^Assertion failed/\"                     \"dart_stack\"\n
+    \   Rule          \"dart_exc\"              \"/^Cannot instantiate/\"                   \"dart_stack\"\n
+    \   Rule          \"dart_exc\"              \"/^Reading static variable/\"              \"dart_stack\"\n
+    \   Rule          \"dart_exc\"              \"/^UnimplementedError/\"                   \"dart_stack\"\n
+    \   Rule          \"dart_exc\"              \"/^Unsupported operation/\"                \"dart_stack\"\n
+    \   Rule          \"dart_exc\"              \"/^Concurrent modification/\"              \"dart_stack\"\n
+    \   Rule          \"dart_exc\"              \"/^Out of Memory/\"                        \"dart_stack\"\n
+    \   Rule          \"dart_exc\"              \"/^Stack Overflow/\"                       \"dart_stack\"\n
+    \   Rule          \"dart_exc\"              \"/^'.+?':.+?$/\"                           \"dart_type_err_line1\"\n
+    \   Rule          \"dart_type_err_line1\"   \"/^#\\d+\\s+.+?\\(.+?\\)$/\"         \"dart_stack\"\n
+    \   Rule          \"dart_type_err_line1\"   \"/^.+?$/\"                       \"dart_type_err_line2\"\n
+    \   Rule          \"dart_type_err_line2\"   \"/^.*?\\^.*?$/\"                  \"dart_type_err_line3\"\n
+    \   Rule          \"dart_type_err_line3\"   \"/^$/\"                          \"dart_type_err_line4\"\n
+    \   Rule          \"dart_type_err_line4\"   \"/^$/\"                          \"dart_stack\"\n
+    \   Rule          \"dart_exc\"              \"/^FormatException/\"            \"dart_format_err_line1\"\n
+    \   Rule          \"dart_format_err_line1\" \"/^#\\d+\\s+.+?\\(.+?\\)$/\"         \"dart_stack\"\n
+    \   Rule          \"dart_format_err_line1\" \"/^./\"                          \"dart_format_err_line2\"\n
+    \   Rule          \"dart_format_err_line2\" \"/^.*?\\^/\"                      \"dart_format_err_line3\"\n
+    \   Rule          \"dart_format_err_line3\" \"/^$/\"                          \"dart_stack\"\n
+    \   Rule          \"dart_exc\"              \"/^NoSuchMethodError:/\"         \"dart_method_err_line1\"\n
+    \   Rule          \"dart_method_err_line1\" \"/^Receiver:/\"                  \"dart_method_err_line2\"\n
+    \   Rule          \"dart_method_err_line2\" \"/^Tried calling:/\"             \"dart_method_err_line3\"\n
+    \   Rule          \"dart_method_err_line3\" \"/^Found:/\"                     \"dart_stack\"\n
+    \   Rule          \"dart_method_err_line3\" \"/^#\\d+\\s+.+?\\(.+?\\)$/\"         \"dart_stack\"\n
+    \   Rule          \"dart_stack\"            \"/^#\\d+\\s+.+?\\(.+?\\)$/\"         \"dart_stack\"\n
+    \   Rule          \"dart_stack\"            \"/^<asynchronous suspension>$/\"
+    \"dart_stack\""
+  redact_kubelet.lua: |-
+    function redact_sensitive_info(tag, timestamp, record)
+      message = record["MESSAGE"]
+      if message then
+        if string.find(message, "access_token=ya29.[a-zA-Z0-9._-]*") then
+          local redact_message = string.gsub(message, "access_token=ya29.[a-zA-Z0-9._-]*", "access_token=<REDACTED>")
+          record["MESSAGE"] = redact_message
+          return 2, timestamp, record
+        end
+      end
+      return 0, timestamp, record
+    end
+kind: ConfigMap
+metadata:
+  annotations:
+    components.gke.io/component-name: fluentbit
+    components.gke.io/component-version: 1.36.3-gke.0
+    kubectl.kubernetes.io/last-applied-configuration: |
+      {"apiVersion":"v1","data":{"fluent-bit.yaml":"pipeline:\n  filters:\n  - buffer: true\n    emitter_mem_buf_limit: 100MB\n    emitter_name: system_container_logs_multiline\n    flush_ms: 500\n    match_regex: kube-pod_.*|kube_kube-system_*|kube_istio-system_*|kube_knative-serving_*|kube_gke-system_*|kube_config-management-system_*|kube_gmp-system_*|kube_gke-managed-cim_*|kube_gke-managed-volumepopulator_*|kube_gke-managed-checkpointing_*|kube_gke-managed-lustrecsi_*|kube_gke-managed-otel_*|kube_gke-managed-mldiagnostics_*|kube_gke-managed-networking-dra-driver_*|kube_gke-managed-pod-snapshots_*|kube_gke-managed-slurm_*\n    multiline.key_content: message\n    multiline.parser: go\n    name: multiline\n  - Call: cb_filter\n    Match: kube_kube-system_fluentbit-gke_fluentbit\n    Script: /fluent-bit/lua-filters/rate_limiter.lua\n    name: lua\n  - Call: rate_limit\n    Match: kube_kube-system_fluentbit-gke_fluentbit\n    Script: /fluent-bit/lua-filters/rate_limiter.lua\n    name: lua\n  - Alias: redact-kubelet-lua\n    Call: redact_sensitive_info\n    Match: kubelet\n    Script: redact_kubelet.lua\n    name: lua\n  - Alias: kubelet_remove_cmdline\n    Match: kubelet\n    Remove: _CMDLINE\n    name: modify\n  - Call: processContainerdLogLevel\n    Match: container-runtime\n    Script: /fluent-bit/lua-filters/parser.lua\n    name: lua\n  - Hard_rename: log message\n    Match: '*'\n    name: modify\n  - Key_Name: message\n    Match: kube_*\n    Parser: json\n    Reserve_Data: true\n    name: parser\n  - Copy: level severity\n    Match: kube_*\n    name: modify\n  - Annotations: false\n    Buffer_Size: 2MB\n    DNS_Retries: 3\n    DNS_Wait_Time: 10\n    Kube_CA_File: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt\n    Kube_Meta_Cache_TTL: 30\n    Kube_Tag_Prefix: kube_\n    Kube_Token_File: /var/run/secrets/kubernetes.io/serviceaccount/token\n    Kube_URL: https://${KUBERNETES_SERVICE_HOST}:${KUBERNETES_SERVICE_PORT}\n    Kubelet_Host: ${HOST_IP}\n    Kubelet_Port: 10250\n    Labels: true\n    Match: kube_*\n    Owner_References: true\n    Regex_Parser: k8s-filter-tag-parser\n    Use_Kubelet: 'On'\n    name: kubernetes\n  - Annotations: false\n    Buffer_Size: 2MB\n    DNS_Retries: 3\n    DNS_Wait_Time: 10\n    Kube_CA_File: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt\n    Kube_Meta_Cache_TTL: 30\n    Kube_Tag_Prefix: kube-pod_\n    Kube_Token_File: /var/run/secrets/kubernetes.io/serviceaccount/token\n    Kube_URL: https://${KUBERNETES_SERVICE_HOST}:${KUBERNETES_SERVICE_PORT}\n    Kubelet_Host: ${HOST_IP}\n    Kubelet_Port: 10250\n    Labels: true\n    Match: kube-pod_*\n    Owner_References: false\n    Regex_Parser: k8s-filter-tag-parser-gvisor\n    Use_Kubelet: 'On'\n    name: kubernetes\n  - Alias: parser\n    Call: processRecord\n    Match: '*'\n    Script: /fluent-bit/lua-filters/parser.lua\n    name: lua\n  inputs:\n  - Alias: kube_kube-system_fluentbit-gke_fluentbit\n    Buffer_Max_Size: 5MB\n    DB: /var/lib/google-fluentbit/pos-files/fluentbit.db\n    Mem_Buf_Limit: 10MB\n    Parser: fluentbit\n    Path: /var/log/containers/*_kube-system_fluentbit-[0-9a-f]*.log\n    Read_from_Head: true\n    Tag: kube_kube-system_fluentbit-gke_fluentbit\n    name: tail\n  - Alias: kube_containers_kube-system\n    Buffer_Chunk_Size: 1MB\n    Buffer_Max_Size: 1MB\n    DB: /var/lib/google-fluentbit/pos-files/flb_kube_kube-system.db\n    Exclude_Path: /var/log/containers/*_kube-system_fluentbit-[0-9a-f]*.log\n    Mem_Buf_Limit: 5MB\n    Parser: containerd\n    Path: /var/log/containers/*_kube-system_*.log\n    Read_from_Head: true\n    Refresh_Interval: 5\n    Rotate_Wait: 15\n    Skip_Long_Lines: true\n    Tag: kube_\u003cnamespace_name\u003e_\u003cpod_name\u003e_\u003ccontainer_name\u003e\n    Tag_Regex: (?\u003cpod_name\u003e[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*)_(?\u003cnamespace_name\u003e[^_]+)_(?\u003ccontainer_name\u003e.+)-\n    name: tail\n  - Alias: kube_containers_istio-system\n    Buffer_Chunk_Size: 1MB\n    Buffer_Max_Size: 1MB\n    DB: /var/lib/google-fluentbit/pos-files/flb_kube_istio-system.db\n    Exclude_Path: /var/log/containers/*_kube-system_fluentbit-[0-9a-f]*.log\n    Mem_Buf_Limit: 5MB\n    Parser: containerd\n    Path: /var/log/containers/*_istio-system_*.log\n    Read_from_Head: true\n    Refresh_Interval: 5\n    Rotate_Wait: 15\n    Skip_Long_Lines: true\n    Tag: kube_\u003cnamespace_name\u003e_\u003cpod_name\u003e_\u003ccontainer_name\u003e\n    Tag_Regex: (?\u003cpod_name\u003e[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*)_(?\u003cnamespace_name\u003e[^_]+)_(?\u003ccontainer_name\u003e.+)-\n    name: tail\n  - Alias: kube_containers_knative-serving\n    Buffer_Chunk_Size: 1MB\n    Buffer_Max_Size: 1MB\n    DB: /var/lib/google-fluentbit/pos-files/flb_kube_knative-serving.db\n    Exclude_Path: /var/log/containers/*_kube-system_fluentbit-[0-9a-f]*.log\n    Mem_Buf_Limit: 5MB\n    Parser: containerd\n    Path: /var/log/containers/*_knative-serving_*.log\n    Read_from_Head: true\n    Refresh_Interval: 5\n    Rotate_Wait: 15\n    Skip_Long_Lines: true\n    Tag: kube_\u003cnamespace_name\u003e_\u003cpod_name\u003e_\u003ccontainer_name\u003e\n    Tag_Regex: (?\u003cpod_name\u003e[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*)_(?\u003cnamespace_name\u003e[^_]+)_(?\u003ccontainer_name\u003e.+)-\n    name: tail\n  - Alias: kube_containers_gke-system\n    Buffer_Chunk_Size: 1MB\n    Buffer_Max_Size: 1MB\n    DB: /var/lib/google-fluentbit/pos-files/flb_kube_gke-system.db\n    Exclude_Path: /var/log/containers/*_kube-system_fluentbit-[0-9a-f]*.log\n    Mem_Buf_Limit: 5MB\n    Parser: containerd\n    Path: /var/log/containers/*_gke-system_*.log\n    Read_from_Head: true\n    Refresh_Interval: 5\n    Rotate_Wait: 15\n    Skip_Long_Lines: true\n    Tag: kube_\u003cnamespace_name\u003e_\u003cpod_name\u003e_\u003ccontainer_name\u003e\n    Tag_Regex: (?\u003cpod_name\u003e[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*)_(?\u003cnamespace_name\u003e[^_]+)_(?\u003ccontainer_name\u003e.+)-\n    name: tail\n  - Alias: kube_containers_config-management-system\n    Buffer_Chunk_Size: 1MB\n    Buffer_Max_Size: 1MB\n    DB: /var/lib/google-fluentbit/pos-files/flb_kube_config-management-system.db\n    Exclude_Path: /var/log/containers/*_kube-system_fluentbit-[0-9a-f]*.log\n    Mem_Buf_Limit: 5MB\n    Parser: containerd\n    Path: /var/log/containers/*_config-management-system_*.log\n    Read_from_Head: true\n    Refresh_Interval: 5\n    Rotate_Wait: 15\n    Skip_Long_Lines: true\n    Tag: kube_\u003cnamespace_name\u003e_\u003cpod_name\u003e_\u003ccontainer_name\u003e\n    Tag_Regex: (?\u003cpod_name\u003e[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*)_(?\u003cnamespace_name\u003e[^_]+)_(?\u003ccontainer_name\u003e.+)-\n    name: tail\n  - Alias: kube_containers_gmp-system\n    Buffer_Chunk_Size: 1MB\n    Buffer_Max_Size: 1MB\n    DB: /var/lib/google-fluentbit/pos-files/flb_kube_gmp-system.db\n    Exclude_Path: /var/log/containers/*_kube-system_fluentbit-[0-9a-f]*.log\n    Mem_Buf_Limit: 5MB\n    Parser: containerd\n    Path: /var/log/containers/*_gmp-system_*.log\n    Read_from_Head: true\n    Refresh_Interval: 5\n    Rotate_Wait: 15\n    Skip_Long_Lines: true\n    Tag: kube_\u003cnamespace_name\u003e_\u003cpod_name\u003e_\u003ccontainer_name\u003e\n    Tag_Regex: (?\u003cpod_name\u003e[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*)_(?\u003cnamespace_name\u003e[^_]+)_(?\u003ccontainer_name\u003e.+)-\n    name: tail\n  - Alias: kube_containers_gke-managed-cim\n    Buffer_Chunk_Size: 1MB\n    Buffer_Max_Size: 1MB\n    DB: /var/lib/google-fluentbit/pos-files/flb_kube_gke-managed-cim.db\n    Exclude_Path: /var/log/containers/*_kube-system_fluentbit-[0-9a-f]*.log\n    Mem_Buf_Limit: 5MB\n    Parser: containerd\n    Path: /var/log/containers/*_gke-managed-cim_*.log\n    Read_from_Head: true\n    Refresh_Interval: 5\n    Rotate_Wait: 15\n    Skip_Long_Lines: true\n    Tag: kube_\u003cnamespace_name\u003e_\u003cpod_name\u003e_\u003ccontainer_name\u003e\n    Tag_Regex: (?\u003cpod_name\u003e[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*)_(?\u003cnamespace_name\u003e[^_]+)_(?\u003ccontainer_name\u003e.+)-\n    name: tail\n  - Alias: kube_containers_gke-managed-volumepopulator\n    Buffer_Chunk_Size: 1MB\n    Buffer_Max_Size: 1MB\n    DB: /var/lib/google-fluentbit/pos-files/flb_kube_gke-managed-volumepopulator.db\n    Exclude_Path: /var/log/containers/*_kube-system_fluentbit-[0-9a-f]*.log\n    Mem_Buf_Limit: 5MB\n    Parser: containerd\n    Path: /var/log/containers/*_gke-managed-volumepopulator_*.log\n    Read_from_Head: true\n    Refresh_Interval: 5\n    Rotate_Wait: 15\n    Skip_Long_Lines: true\n    Tag: kube_\u003cnamespace_name\u003e_\u003cpod_name\u003e_\u003ccontainer_name\u003e\n    Tag_Regex: (?\u003cpod_name\u003e[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*)_(?\u003cnamespace_name\u003e[^_]+)_(?\u003ccontainer_name\u003e.+)-\n    name: tail\n  - Alias: kube_containers_gke-managed-checkpointing\n    Buffer_Chunk_Size: 1MB\n    Buffer_Max_Size: 1MB\n    DB: /var/lib/google-fluentbit/pos-files/flb_kube_gke-managed-checkpointing.db\n    Exclude_Path: /var/log/containers/*_kube-system_fluentbit-[0-9a-f]*.log\n    Mem_Buf_Limit: 5MB\n    Parser: containerd\n    Path: /var/log/containers/*_gke-managed-checkpointing_*.log\n    Read_from_Head: true\n    Refresh_Interval: 5\n    Rotate_Wait: 15\n    Skip_Long_Lines: true\n    Tag: kube_\u003cnamespace_name\u003e_\u003cpod_name\u003e_\u003ccontainer_name\u003e\n    Tag_Regex: (?\u003cpod_name\u003e[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*)_(?\u003cnamespace_name\u003e[^_]+)_(?\u003ccontainer_name\u003e.+)-\n    name: tail\n  - Alias: kube_containers_gke-managed-lustrecsi\n    Buffer_Chunk_Size: 1MB\n    Buffer_Max_Size: 1MB\n    DB: /var/lib/google-fluentbit/pos-files/flb_kube_gke-managed-lustrecsi.db\n    Exclude_Path: /var/log/containers/*_kube-system_fluentbit-[0-9a-f]*.log\n    Mem_Buf_Limit: 5MB\n    Parser: containerd\n    Path: /var/log/containers/*_gke-managed-lustrecsi_*.log\n    Read_from_Head: true\n    Refresh_Interval: 5\n    Rotate_Wait: 15\n    Skip_Long_Lines: true\n    Tag: kube_\u003cnamespace_name\u003e_\u003cpod_name\u003e_\u003ccontainer_name\u003e\n    Tag_Regex: (?\u003cpod_name\u003e[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*)_(?\u003cnamespace_name\u003e[^_]+)_(?\u003ccontainer_name\u003e.+)-\n    name: tail\n  - Alias: kube_containers_gke-managed-otel\n    Buffer_Chunk_Size: 1MB\n    Buffer_Max_Size: 1MB\n    DB: /var/lib/google-fluentbit/pos-files/flb_kube_gke-managed-otel.db\n    Exclude_Path: /var/log/containers/*_kube-system_fluentbit-[0-9a-f]*.log\n    Mem_Buf_Limit: 5MB\n    Parser: containerd\n    Path: /var/log/containers/*_gke-managed-otel_*.log\n    Read_from_Head: true\n    Refresh_Interval: 5\n    Rotate_Wait: 15\n    Skip_Long_Lines: true\n    Tag: kube_\u003cnamespace_name\u003e_\u003cpod_name\u003e_\u003ccontainer_name\u003e\n    Tag_Regex: (?\u003cpod_name\u003e[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*)_(?\u003cnamespace_name\u003e[^_]+)_(?\u003ccontainer_name\u003e.+)-\n    name: tail\n  - Alias: kube_containers_gke-managed-mldiagnostics\n    Buffer_Chunk_Size: 1MB\n    Buffer_Max_Size: 1MB\n    DB: /var/lib/google-fluentbit/pos-files/flb_kube_gke-managed-mldiagnostics.db\n    Exclude_Path: /var/log/containers/*_kube-system_fluentbit-[0-9a-f]*.log\n    Mem_Buf_Limit: 5MB\n    Parser: containerd\n    Path: /var/log/containers/*_gke-managed-mldiagnostics_*.log\n    Read_from_Head: true\n    Refresh_Interval: 5\n    Rotate_Wait: 15\n    Skip_Long_Lines: true\n    Tag: kube_\u003cnamespace_name\u003e_\u003cpod_name\u003e_\u003ccontainer_name\u003e\n    Tag_Regex: (?\u003cpod_name\u003e[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*)_(?\u003cnamespace_name\u003e[^_]+)_(?\u003ccontainer_name\u003e.+)-\n    name: tail\n  - Alias: kube_containers_gke-managed-networking-dra-driver\n    Buffer_Chunk_Size: 1MB\n    Buffer_Max_Size: 1MB\n    DB: /var/lib/google-fluentbit/pos-files/flb_kube_gke-managed-networking-dra-driver.db\n    Exclude_Path: /var/log/containers/*_kube-system_fluentbit-[0-9a-f]*.log\n    Mem_Buf_Limit: 5MB\n    Parser: containerd\n    Path: /var/log/containers/*_gke-managed-networking-dra-driver_*.log\n    Read_from_Head: true\n    Refresh_Interval: 5\n    Rotate_Wait: 15\n    Skip_Long_Lines: true\n    Tag: kube_\u003cnamespace_name\u003e_\u003cpod_name\u003e_\u003ccontainer_name\u003e\n    Tag_Regex: (?\u003cpod_name\u003e[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*)_(?\u003cnamespace_name\u003e[^_]+)_(?\u003ccontainer_name\u003e.+)-\n    name: tail\n  - Alias: kube_containers_gke-managed-pod-snapshots\n    Buffer_Chunk_Size: 1MB\n    Buffer_Max_Size: 1MB\n    DB: /var/lib/google-fluentbit/pos-files/flb_kube_gke-managed-pod-snapshots.db\n    Exclude_Path: /var/log/containers/*_kube-system_fluentbit-[0-9a-f]*.log\n    Mem_Buf_Limit: 5MB\n    Parser: containerd\n    Path: /var/log/containers/*_gke-managed-pod-snapshots_*.log\n    Read_from_Head: true\n    Refresh_Interval: 5\n    Rotate_Wait: 15\n    Skip_Long_Lines: true\n    Tag: kube_\u003cnamespace_name\u003e_\u003cpod_name\u003e_\u003ccontainer_name\u003e\n    Tag_Regex: (?\u003cpod_name\u003e[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*)_(?\u003cnamespace_name\u003e[^_]+)_(?\u003ccontainer_name\u003e.+)-\n    name: tail\n  - Alias: kube_containers_gke-managed-slurm\n    Buffer_Chunk_Size: 1MB\n    Buffer_Max_Size: 1MB\n    DB: /var/lib/google-fluentbit/pos-files/flb_kube_gke-managed-slurm.db\n    Exclude_Path: /var/log/containers/*_kube-system_fluentbit-[0-9a-f]*.log\n    Mem_Buf_Limit: 5MB\n    Parser: containerd\n    Path: /var/log/containers/*_gke-managed-slurm_*.log\n    Read_from_Head: true\n    Refresh_Interval: 5\n    Rotate_Wait: 15\n    Skip_Long_Lines: true\n    Tag: kube_\u003cnamespace_name\u003e_\u003cpod_name\u003e_\u003ccontainer_name\u003e\n    Tag_Regex: (?\u003cpod_name\u003e[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*)_(?\u003cnamespace_name\u003e[^_]+)_(?\u003ccontainer_name\u003e.+)-\n    name: tail\n  - Alias: kube_containers\n    Buffer_Chunk_Size: 1MB\n    Buffer_Max_Size: 20MB\n    DB: /var/lib/google-fluentbit/pos-files/flb_kube.db\n    Exclude_Path: /var/log/containers/*_kube-system_*.log,/var/log/containers/*_istio-system_*.log,/var/log/containers/*_knative-serving_*.log,/var/log/containers/*_gke-system_*.log,/var/log/containers/*_config-management-system_*.log,/var/log/containers/*_gmp-system_*.log,/var/log/containers/*_gke-managed-cim_*.log,/var/log/containers/*_gke-managed-volumepopulator_*.log,/var/log/containers/*_gke-managed-checkpointing_*.log,/var/log/containers/*_gke-managed-lustrecsi_*.log,/var/log/containers/*_gke-managed-otel_*.log,/var/log/containers/*_gke-managed-mldiagnostics_*.log,/var/log/containers/*_gke-managed-networking-dra-driver_*.log,/var/log/containers/*_gke-managed-pod-snapshots_*.log,/var/log/containers/*_gke-managed-slurm_*.log\n    Mem_Buf_Limit: 100MB\n    Parser: containerd\n    Path: /var/log/containers/*.log\n    Read_from_Head: true\n    Refresh_Interval: 1\n    Rotate_Wait: 15\n    Skip_Long_Lines: true\n    Tag: kube_\u003cnamespace_name\u003e_\u003cpod_name\u003e_\u003ccontainer_name\u003e\n    Tag_Regex: (?\u003cpod_name\u003e[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*)_(?\u003cnamespace_name\u003e[^_]+)_(?\u003ccontainer_name\u003e.+)-\n    Threaded: true\n    name: tail\n    processors:\n      logs:\n      - buffer: true\n        emitter_mem_buf_limit: 200MB\n        emitter_name: customer_logs_multiline_processor\n        flush_ms: 500\n        multiline.key_content: message\n        multiline.parser: go,java,python,php,custom_ruby,dart\n        name: multiline\n  - Alias: gvisor_kube-system\n    Buffer_Max_Size: 1MB\n    DB: /var/lib/google-fluentbit/pos-files/gvisor_kube-system.db\n    Key: message\n    Mem_Buf_Limit: 1MB\n    Path: /var/log/pods/kube-system_*/*\n    Read_from_Head: true\n    Refresh_Interval: 5\n    Skip_Long_Lines: true\n    Tag: kube-pod_\u003cnamespace_name\u003e_\u003cpod_name\u003e_\u003cruntime\u003e\n    Tag_Regex: \\/var\\/log\\/pods\\/(?\u003cnamespace_name\u003e[^_]+)_(?\u003cpod_name\u003e[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*)_(?\u003cid\u003e[\\-a-z0-9]+)\\/(?\u003cruntime\u003e[a-z]+)\\.log\n    name: tail\n  - Alias: gvisor_istio-system\n    Buffer_Max_Size: 1MB\n    DB: /var/lib/google-fluentbit/pos-files/gvisor_istio-system.db\n    Key: message\n    Mem_Buf_Limit: 1MB\n    Path: /var/log/pods/istio-system_*/*\n    Read_from_Head: true\n    Refresh_Interval: 5\n    Skip_Long_Lines: true\n    Tag: kube-pod_\u003cnamespace_name\u003e_\u003cpod_name\u003e_\u003cruntime\u003e\n    Tag_Regex: \\/var\\/log\\/pods\\/(?\u003cnamespace_name\u003e[^_]+)_(?\u003cpod_name\u003e[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*)_(?\u003cid\u003e[\\-a-z0-9]+)\\/(?\u003cruntime\u003e[a-z]+)\\.log\n    name: tail\n  - Alias: gvisor_knative-serving\n    Buffer_Max_Size: 1MB\n    DB: /var/lib/google-fluentbit/pos-files/gvisor_knative-serving.db\n    Key: message\n    Mem_Buf_Limit: 1MB\n    Path: /var/log/pods/knative-serving_*/*\n    Read_from_Head: true\n    Refresh_Interval: 5\n    Skip_Long_Lines: true\n    Tag: kube-pod_\u003cnamespace_name\u003e_\u003cpod_name\u003e_\u003cruntime\u003e\n    Tag_Regex: \\/var\\/log\\/pods\\/(?\u003cnamespace_name\u003e[^_]+)_(?\u003cpod_name\u003e[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*)_(?\u003cid\u003e[\\-a-z0-9]+)\\/(?\u003cruntime\u003e[a-z]+)\\.log\n    name: tail\n  - Alias: gvisor_gke-system\n    Buffer_Max_Size: 1MB\n    DB: /var/lib/google-fluentbit/pos-files/gvisor_gke-system.db\n    Key: message\n    Mem_Buf_Limit: 1MB\n    Path: /var/log/pods/gke-system_*/*\n    Read_from_Head: true\n    Refresh_Interval: 5\n    Skip_Long_Lines: true\n    Tag: kube-pod_\u003cnamespace_name\u003e_\u003cpod_name\u003e_\u003cruntime\u003e\n    Tag_Regex: \\/var\\/log\\/pods\\/(?\u003cnamespace_name\u003e[^_]+)_(?\u003cpod_name\u003e[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*)_(?\u003cid\u003e[\\-a-z0-9]+)\\/(?\u003cruntime\u003e[a-z]+)\\.log\n    name: tail\n  - Alias: gvisor_config-management-system\n    Buffer_Max_Size: 1MB\n    DB: /var/lib/google-fluentbit/pos-files/gvisor_config-management-system.db\n    Key: message\n    Mem_Buf_Limit: 1MB\n    Path: /var/log/pods/config-management-system_*/*\n    Read_from_Head: true\n    Refresh_Interval: 5\n    Skip_Long_Lines: true\n    Tag: kube-pod_\u003cnamespace_name\u003e_\u003cpod_name\u003e_\u003cruntime\u003e\n    Tag_Regex: \\/var\\/log\\/pods\\/(?\u003cnamespace_name\u003e[^_]+)_(?\u003cpod_name\u003e[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*)_(?\u003cid\u003e[\\-a-z0-9]+)\\/(?\u003cruntime\u003e[a-z]+)\\.log\n    name: tail\n  - Alias: gvisor_gmp-system\n    Buffer_Max_Size: 1MB\n    DB: /var/lib/google-fluentbit/pos-files/gvisor_gmp-system.db\n    Key: message\n    Mem_Buf_Limit: 1MB\n    Path: /var/log/pods/gmp-system_*/*\n    Read_from_Head: true\n    Refresh_Interval: 5\n    Skip_Long_Lines: true\n    Tag: kube-pod_\u003cnamespace_name\u003e_\u003cpod_name\u003e_\u003cruntime\u003e\n    Tag_Regex: \\/var\\/log\\/pods\\/(?\u003cnamespace_name\u003e[^_]+)_(?\u003cpod_name\u003e[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*)_(?\u003cid\u003e[\\-a-z0-9]+)\\/(?\u003cruntime\u003e[a-z]+)\\.log\n    name: tail\n  - Alias: gvisor_gke-managed-cim\n    Buffer_Max_Size: 1MB\n    DB: /var/lib/google-fluentbit/pos-files/gvisor_gke-managed-cim.db\n    Key: message\n    Mem_Buf_Limit: 1MB\n    Path: /var/log/pods/gke-managed-cim_*/*\n    Read_from_Head: true\n    Refresh_Interval: 5\n    Skip_Long_Lines: true\n    Tag: kube-pod_\u003cnamespace_name\u003e_\u003cpod_name\u003e_\u003cruntime\u003e\n    Tag_Regex: \\/var\\/log\\/pods\\/(?\u003cnamespace_name\u003e[^_]+)_(?\u003cpod_name\u003e[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*)_(?\u003cid\u003e[\\-a-z0-9]+)\\/(?\u003cruntime\u003e[a-z]+)\\.log\n    name: tail\n  - Alias: gvisor_gke-managed-volumepopulator\n    Buffer_Max_Size: 1MB\n    DB: /var/lib/google-fluentbit/pos-files/gvisor_gke-managed-volumepopulator.db\n    Key: message\n    Mem_Buf_Limit: 1MB\n    Path: /var/log/pods/gke-managed-volumepopulator_*/*\n    Read_from_Head: true\n    Refresh_Interval: 5\n    Skip_Long_Lines: true\n    Tag: kube-pod_\u003cnamespace_name\u003e_\u003cpod_name\u003e_\u003cruntime\u003e\n    Tag_Regex: \\/var\\/log\\/pods\\/(?\u003cnamespace_name\u003e[^_]+)_(?\u003cpod_name\u003e[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*)_(?\u003cid\u003e[\\-a-z0-9]+)\\/(?\u003cruntime\u003e[a-z]+)\\.log\n    name: tail\n  - Alias: gvisor_gke-managed-checkpointing\n    Buffer_Max_Size: 1MB\n    DB: /var/lib/google-fluentbit/pos-files/gvisor_gke-managed-checkpointing.db\n    Key: message\n    Mem_Buf_Limit: 1MB\n    Path: /var/log/pods/gke-managed-checkpointing_*/*\n    Read_from_Head: true\n    Refresh_Interval: 5\n    Skip_Long_Lines: true\n    Tag: kube-pod_\u003cnamespace_name\u003e_\u003cpod_name\u003e_\u003cruntime\u003e\n    Tag_Regex: \\/var\\/log\\/pods\\/(?\u003cnamespace_name\u003e[^_]+)_(?\u003cpod_name\u003e[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*)_(?\u003cid\u003e[\\-a-z0-9]+)\\/(?\u003cruntime\u003e[a-z]+)\\.log\n    name: tail\n  - Alias: gvisor_gke-managed-lustrecsi\n    Buffer_Max_Size: 1MB\n    DB: /var/lib/google-fluentbit/pos-files/gvisor_gke-managed-lustrecsi.db\n    Key: message\n    Mem_Buf_Limit: 1MB\n    Path: /var/log/pods/gke-managed-lustrecsi_*/*\n    Read_from_Head: true\n    Refresh_Interval: 5\n    Skip_Long_Lines: true\n    Tag: kube-pod_\u003cnamespace_name\u003e_\u003cpod_name\u003e_\u003cruntime\u003e\n    Tag_Regex: \\/var\\/log\\/pods\\/(?\u003cnamespace_name\u003e[^_]+)_(?\u003cpod_name\u003e[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*)_(?\u003cid\u003e[\\-a-z0-9]+)\\/(?\u003cruntime\u003e[a-z]+)\\.log\n    name: tail\n  - Alias: gvisor_gke-managed-otel\n    Buffer_Max_Size: 1MB\n    DB: /var/lib/google-fluentbit/pos-files/gvisor_gke-managed-otel.db\n    Key: message\n    Mem_Buf_Limit: 1MB\n    Path: /var/log/pods/gke-managed-otel_*/*\n    Read_from_Head: true\n    Refresh_Interval: 5\n    Skip_Long_Lines: true\n    Tag: kube-pod_\u003cnamespace_name\u003e_\u003cpod_name\u003e_\u003cruntime\u003e\n    Tag_Regex: \\/var\\/log\\/pods\\/(?\u003cnamespace_name\u003e[^_]+)_(?\u003cpod_name\u003e[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*)_(?\u003cid\u003e[\\-a-z0-9]+)\\/(?\u003cruntime\u003e[a-z]+)\\.log\n    name: tail\n  - Alias: gvisor_gke-managed-mldiagnostics\n    Buffer_Max_Size: 1MB\n    DB: /var/lib/google-fluentbit/pos-files/gvisor_gke-managed-mldiagnostics.db\n    Key: message\n    Mem_Buf_Limit: 1MB\n    Path: /var/log/pods/gke-managed-mldiagnostics_*/*\n    Read_from_Head: true\n    Refresh_Interval: 5\n    Skip_Long_Lines: true\n    Tag: kube-pod_\u003cnamespace_name\u003e_\u003cpod_name\u003e_\u003cruntime\u003e\n    Tag_Regex: \\/var\\/log\\/pods\\/(?\u003cnamespace_name\u003e[^_]+)_(?\u003cpod_name\u003e[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*)_(?\u003cid\u003e[\\-a-z0-9]+)\\/(?\u003cruntime\u003e[a-z]+)\\.log\n    name: tail\n  - Alias: gvisor_gke-managed-networking-dra-driver\n    Buffer_Max_Size: 1MB\n    DB: /var/lib/google-fluentbit/pos-files/gvisor_gke-managed-networking-dra-driver.db\n    Key: message\n    Mem_Buf_Limit: 1MB\n    Path: /var/log/pods/gke-managed-networking-dra-driver_*/*\n    Read_from_Head: true\n    Refresh_Interval: 5\n    Skip_Long_Lines: true\n    Tag: kube-pod_\u003cnamespace_name\u003e_\u003cpod_name\u003e_\u003cruntime\u003e\n    Tag_Regex: \\/var\\/log\\/pods\\/(?\u003cnamespace_name\u003e[^_]+)_(?\u003cpod_name\u003e[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*)_(?\u003cid\u003e[\\-a-z0-9]+)\\/(?\u003cruntime\u003e[a-z]+)\\.log\n    name: tail\n  - Alias: gvisor_gke-managed-pod-snapshots\n    Buffer_Max_Size: 1MB\n    DB: /var/lib/google-fluentbit/pos-files/gvisor_gke-managed-pod-snapshots.db\n    Key: message\n    Mem_Buf_Limit: 1MB\n    Path: /var/log/pods/gke-managed-pod-snapshots_*/*\n    Read_from_Head: true\n    Refresh_Interval: 5\n    Skip_Long_Lines: true\n    Tag: kube-pod_\u003cnamespace_name\u003e_\u003cpod_name\u003e_\u003cruntime\u003e\n    Tag_Regex: \\/var\\/log\\/pods\\/(?\u003cnamespace_name\u003e[^_]+)_(?\u003cpod_name\u003e[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*)_(?\u003cid\u003e[\\-a-z0-9]+)\\/(?\u003cruntime\u003e[a-z]+)\\.log\n    name: tail\n  - Alias: gvisor_gke-managed-slurm\n    Buffer_Max_Size: 1MB\n    DB: /var/lib/google-fluentbit/pos-files/gvisor_gke-managed-slurm.db\n    Key: message\n    Mem_Buf_Limit: 1MB\n    Path: /var/log/pods/gke-managed-slurm_*/*\n    Read_from_Head: true\n    Refresh_Interval: 5\n    Skip_Long_Lines: true\n    Tag: kube-pod_\u003cnamespace_name\u003e_\u003cpod_name\u003e_\u003cruntime\u003e\n    Tag_Regex: \\/var\\/log\\/pods\\/(?\u003cnamespace_name\u003e[^_]+)_(?\u003cpod_name\u003e[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*)_(?\u003cid\u003e[\\-a-z0-9]+)\\/(?\u003cruntime\u003e[a-z]+)\\.log\n    name: tail\n  - Alias: gvisor\n    Buffer_Max_Size: 1MB\n    DB: /var/lib/google-fluentbit/pos-files/gvisor.db\n    Exclude_Path: /var/log/pods/*/*_panic.log,/var/log/pods/kube-system_*/*,/var/log/pods/istio-system_*/*,/var/log/pods/knative-serving_*/*,/var/log/pods/gke-system_*/*,/var/log/pods/config-management-system_*/*,/var/log/pods/gmp-system_*/*,/var/log/pods/gke-managed-cim_*/*,/var/log/pods/gke-managed-volumepopulator_*/*,/var/log/pods/gke-managed-checkpointing_*/*,/var/log/pods/gke-managed-lustrecsi_*/*,/var/log/pods/gke-managed-otel_*/*,/var/log/pods/gke-managed-mldiagnostics_*/*,/var/log/pods/gke-managed-networking-dra-driver_*/*,/var/log/pods/gke-managed-pod-snapshots_*/*,/var/log/pods/gke-managed-slurm_*/*\n    Key: message\n    Mem_Buf_Limit: 1MB\n    Path: /var/log/pods/*/*.log\n    Read_from_Head: true\n    Refresh_Interval: 5\n    Skip_Long_Lines: true\n    Tag: kube-pod_\u003cnamespace_name\u003e_\u003cpod_name\u003e_\u003cruntime\u003e\n    Tag_Regex: \\/var\\/log\\/pods\\/(?\u003cnamespace_name\u003e[^_]+)_(?\u003cpod_name\u003e[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*)_(?\u003cid\u003e[\\-a-z0-9]+)\\/(?\u003cruntime\u003e[a-z]+)\\.log\n    name: tail\n  - Alias: gvisor_panic\n    Buffer_Max_Size: 1MB\n    DB: /var/lib/google-fluentbit/pos-files/gvisor_panic.db\n    Exclude_Path: /var/log/pods/kube-system_*/*,/var/log/pods/istio-system_*/*,/var/log/pods/knative-serving_*/*,/var/log/pods/gke-system_*/*,/var/log/pods/config-management-system_*/*,/var/log/pods/gmp-system_*/*,/var/log/pods/gke-managed-cim_*/*,/var/log/pods/gke-managed-volumepopulator_*/*,/var/log/pods/gke-managed-checkpointing_*/*,/var/log/pods/gke-managed-lustrecsi_*/*,/var/log/pods/gke-managed-otel_*/*,/var/log/pods/gke-managed-mldiagnostics_*/*,/var/log/pods/gke-managed-networking-dra-driver_*/*,/var/log/pods/gke-managed-pod-snapshots_*/*,/var/log/pods/gke-managed-slurm_*/*\n    Key: message\n    Mem_Buf_Limit: 1MB\n    Path: /var/log/pods/*/*_panic.log\n    Read_from_Head: true\n    Refresh_Interval: 5\n    Skip_Long_Lines: true\n    Tag: kube-pod_\u003cnamespace_name\u003e_\u003cpod_name\u003e_\u003cruntime\u003epanic\n    Tag_Regex: \\/var\\/log\\/pods\\/(?\u003cnamespace_name\u003e[^_]+)_(?\u003cpod_name\u003e[a-z0-9]([-a-z0-9]*[a-z0-9])?(\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*)_(?\u003cid\u003e[\\-a-z0-9]+)\\/(?\u003cruntime\u003e[a-z]+)_panic\\.log\n    name: tail\n  - Alias: startupscript\n    DB: /var/lib/google-fluentbit/pos-files/startupscript.db\n    Parser: syslog\n    Path: /var/log/startupscript.log\n    Tag: startupscript\n    name: tail\n  - Alias: policy-action\n    DB: /var/lib/google-fluentbit/pos-files/policy-action.db\n    Parser: network-log\n    Path: /var/log/network/policy_action.log\n    Read_from_Head: true\n    Refresh_Interval: 5\n    Skip_Long_Lines: true\n    Tag: policy-action\n    name: tail\n  - Alias: kube-proxy\n    Buffer_Max_Size: 1MB\n    DB: /var/lib/google-fluentbit/pos-files/kube-proxy.db\n    Mem_Buf_Limit: 1MB\n    Parser: glog\n    Path: /var/log/kube-proxy.log\n    Read_from_Head: true\n    Tag: kube-proxy\n    name: tail\n  - Alias: docker\n    DB: /var/lib/google-fluentbit/pos-files/docker.db\n    Mem_Buf_Limit: 1MB\n    Path: /var/log/journal\n    Systemd_Filter: _SYSTEMD_UNIT=docker.service\n    Tag: docker\n    name: systemd\n  - Alias: kubelet\n    DB: /var/lib/google-fluentbit/pos-files/kubelet.db\n    Mem_Buf_Limit: 1MB\n    Path: /var/log/journal\n    Systemd_Filter: _SYSTEMD_UNIT=kubelet.service\n    Tag: kubelet\n    name: systemd\n  - Alias: kube-node-installation\n    DB: /var/lib/google-fluentbit/pos-files/kube-node-installation.db\n    Mem_Buf_Limit: 1MB\n    Path: /var/log/journal\n    Systemd_Filter: _SYSTEMD_UNIT=kube-node-installation.service\n    Tag: kube-node-installation\n    name: systemd\n  - Alias: kube-node-configuration\n    DB: /var/lib/google-fluentbit/pos-files/kube-node-configuration.db\n    Mem_Buf_Limit: 1MB\n    Path: /var/log/journal\n    Systemd_Filter: _SYSTEMD_UNIT=kube-node-configuration.service\n    Tag: kube-node-configuration\n    name: systemd\n  - Alias: kube-logrotate\n    DB: /var/lib/google-fluentbit/pos-files/kube-logrotate.db\n    Mem_Buf_Limit: 1MB\n    Path: /var/log/journal\n    Systemd_Filter: _SYSTEMD_UNIT=kube-logrotate.service\n    Tag: kube-logrotate\n    name: systemd\n  - Alias: node-problem-detector\n    DB: /var/lib/google-fluentbit/pos-files/node-problem-detector.db\n    Mem_Buf_Limit: 1MB\n    Path: /var/log/journal\n    Systemd_Filter: _SYSTEMD_UNIT=node-problem-detector.service\n    Tag: node-problem-detector\n    name: systemd\n  - Alias: kube-container-runtime-monitor\n    DB: /var/lib/google-fluentbit/pos-files/kube-container-runtime-monitor.db\n    Mem_Buf_Limit: 1MB\n    Path: /var/log/journal\n    Systemd_Filter: _SYSTEMD_UNIT=kube-container-runtime-monitor.service\n    Tag: kube-container-runtime-monitor\n    name: systemd\n  - Alias: kubelet-monitor\n    DB: /var/lib/google-fluentbit/pos-files/kubelet-monitor.db\n    Mem_Buf_Limit: 1MB\n    Path: /var/log/journal\n    Systemd_Filter: _SYSTEMD_UNIT=kubelet-monitor.service\n    Tag: kubelet-monitor\n    name: systemd\n  - Alias: gcfsd\n    DB: /var/lib/google-fluentbit/pos-files/gcfsd.db\n    Mem_Buf_Limit: 1MB\n    Path: /var/log/journal\n    Systemd_Filter: _SYSTEMD_UNIT=gcfsd.service\n    Tag: gcfsd\n    name: systemd\n  - Alias: gcfs-snapshotter\n    DB: /var/lib/google-fluentbit/pos-files/gcfs-snapshotter.db\n    Mem_Buf_Limit: 1MB\n    Path: /var/log/journal\n    Systemd_Filter: _SYSTEMD_UNIT=gcfs-snapshotter.service\n    Tag: gcfs-snapshotter\n    name: systemd\n  - Alias: criproxy\n    DB: /var/lib/google-fluentbit/pos-files/criproxy.db\n    Mem_Buf_Limit: 1MB\n    Path: /var/log/journal\n    Systemd_Filter: _SYSTEMD_UNIT=criproxy.service\n    Tag: criproxy\n    name: systemd\n  - Alias: container-runtime\n    DB: /var/lib/google-fluentbit/pos-files/container-runtime.db\n    Mem_Buf_Limit: 1MB\n    Path: /var/log/journal\n    Systemd_Filter: _SYSTEMD_UNIT=containerd.service\n    Tag: container-runtime\n    name: systemd\n  outputs:\n  - Alias: node-logging-k8s-container\n    Match_Regex: kube_.*\n    Resource: k8s_container\n    Retry_Limit: 3\n    cloud_logging_base_url: https://logging.googleapis.com:443\n    export_to_project_id: timbai-gke-dev\n    http_request_key: httpRequest\n    k8s_cluster_location: us-central1-a\n    k8s_cluster_name: fluent-bit-agent-x86\n    name: stackdriver\n    severity_key: severity\n    text_payload_key: textPayload\n    tls: true\n    trace_sampled_key: logging.googleapis.com/trace_sampled\n    workers: 2\n  - Alias: node-logging-k8s-pod\n    Match_Regex: kube-pod_.*\n    Resource: k8s_pod\n    Retry_Limit: 3\n    cloud_logging_base_url: https://logging.googleapis.com:443\n    export_to_project_id: timbai-gke-dev\n    http_request_key: httpRequest\n    k8s_cluster_location: us-central1-a\n    k8s_cluster_name: fluent-bit-agent-x86\n    name: stackdriver\n    severity_key: severity\n    text_payload_key: textPayload\n    tls: true\n    trace_sampled_key: logging.googleapis.com/trace_sampled\n    workers: 2\n  - Alias: node-logging-k8s-node\n    Match_Regex: ^(?!kube(_|-pod_)).*$\n    Resource: k8s_node\n    Retry_Limit: 3\n    cloud_logging_base_url: https://logging.googleapis.com:443\n    export_to_project_id: timbai-gke-dev\n    http_request_key: httpRequest\n    k8s_cluster_location: us-central1-a\n    k8s_cluster_name: fluent-bit-agent-x86\n    name: stackdriver\n    severity_key: severity\n    text_payload_key: textPayload\n    tls: true\n    trace_sampled_key: logging.googleapis.com/trace_sampled\n    workers: 2\nservice:\n  Daemon: false\n  Flush: 5\n  Grace: 120\n  HTTP_Listen: 0.0.0.0\n  HTTP_PORT: 2020\n  HTTP_Server: true\n  Log_Level: info\n  Parsers_File: parsers.conf\n  dns.resolver: legacy\n","parsers.conf":"[PARSER]\n    Name              containerd\n    Format            regex\n    # The timestamp is described in https://www.rfc-editor.org/rfc/rfc3339#section-5.6\n    # Containerd logs follow the pattern of CRI Log Format (https://github.com/kubernetes/design-proposals-archive/blob/main/node/kubelet-cri-logging.md): \u003ctimestamp\u003e \u003cstream\u003e \u003ctag\u003e \u003clog_content\u003e\n    # F in tag means \"Full Log\", and P means \"Partial Log\".\n    \n    Regex             ^(?\u003ctime\u003e[0-9]{4}-[0-9]{2}-[0-9]{2}[Tt ][0-9]{2}:[0-9]{2}:[0-9]{2}(?:\\.[0-9]+)?(?:[Zz]|[+-][0-9]{2}:[0-9]{2}))\\s+(?\u003cstream\u003estdout|stderr)\\s(F|P)\\s(?\u003cmessage\u003e.*)$\n    \n    Time_Key          time\n    Reserve_Data      On\n    Time_Format       %Y-%m-%dT%H:%M:%S.%L%z\n    Skip_Empty_Values false\n\n[PARSER]\n    Name        json\n    Format      json\n\n[PARSER]\n    Name        syslog\n    Format      regex\n    Regex       ^\\\u003c(?\u003cpri\u003e[0-9]+)\\\u003e(?\u003ctime\u003e[^ ]* {1,2}[^ ]* [^ ]*) (?\u003chost\u003e[^ ]*) (?\u003cident\u003e[a-zA-Z0-9_\\/\\.\\-]*)(?:\\[(?\u003cpid\u003e[0-9]+)\\])?(?:[^\\:]*\\:)? *(?\u003cmessage\u003e.*)$\n    Time_Key    time\n    Time_Format %b %d %H:%M:%S\n\n[PARSER]\n    Name        glog\n    Format      regex\n    # We skip the glog timestamp as it doesn't have year (in most cases) and time zone information.\n    # Instead, we rely on the containerd timestamp, which is available for every log line.\n    Regex       ^(?\u003cseverity\u003e\\w)\\d{4}?\\d{4} [^\\s]*\\s+(?\u003cpid\u003e\\d+)\\s+(?\u003csource_file\u003e[^ \\]]+)\\:(?\u003csource_line\u003e\\d+)\\]\\s(?\u003cmessage\u003e.*)$\n\n[PARSER]\n    Name        tsl_tf_cpp\n    Format      regex\n    # TensorFlow/TSL customizes the Abseil C++ log format to include the full YYYY-MM-DD date and omits the thread ID.\n    Regex       ^\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}\\.\\d{6}:\\s+(?\u003cseverity\u003e[IWEF])\\s+(?\u003csource_file\u003e[^\\s:]+):(?\u003csource_line\u003e\\d+)\\]\\s+(?\u003cmessage\u003e.*)$\n\n[PARSER]\n    Name        network-log\n    Format      json\n    Time_Key    timestamp\n    Time_Format %Y-%m-%dT%H:%M:%S.%L%z\n\n# Example:\n# [2023/01/05 00:01:58] [ info] [output:http:http.0] 127.0.0.1:2021, HTTP status=200\\\n# Rubular: https://screenshot.googleplex.com/8SvHiZJLUkW9idQ\n[PARSER]\n    Name   fluentbit\n    Format regex\n    \n    Regex  \\[(?\u003ctime\u003e[^\\]]+)\\][ ]*\\[[ ]*(?\u003cseverity\u003e[^\\]]+)\\][ ]*\\[(?\u003cplugin\u003e[^\\]]+)\\] (?\u003cmessage\u003e.*)\n    \n    Time_Key time\n    Time_Format %Y/%m/%d %H:%M:%S\n\n\n[PARSER]\n    Name    k8s-filter-tag-parser\n    Format  regex\n    Regex   ^(?\u003cnamespace_name\u003e[^_.]+)_(?\u003cpod_name\u003e[a-z0-9](?:[-a-z0-9]*[a-z0-9])?(?:\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*)_(?\u003ccontainer_name\u003e[^.]+)$\n[PARSER]\n    Name    k8s-filter-tag-parser-gvisor\n    Format  regex\n    Regex   ^(?\u003cnamespace_name\u003e[^_.]+)_(?\u003cpod_name\u003e[a-z0-9](?:[-a-z0-9]*[a-z0-9])?(?:\\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*)_(?\u003ccontainer_name\u003e[^.]+)$\n\n\n\n[MULTILINE_PARSER]\n    # Fluentd rules reference: https://github.com/GoogleCloudPlatform/fluent-plugin-detect-exceptions/blob/master/lib/fluent/plugin/exception_detector.rb#L87\n    Name          php\n    Type          regex\n    Key_Content   message\n    Flush_Timeout 1000\n    Rule          \"start_state\" \"/(?:PHP\\ (?:Notice|Parse\\ error|Fatal\\ error|Warning):)|(?:exception\\ '[^']+'\\ with\\ message\\ ')/x\" \"php_stack_begin\"\n    Rule          \"php_stack_begin\"  \"/^Stack trace:/\"  \"php_stack_frames\"\n    Rule          \"php_stack_frames\" \"/^#\\d/\"           \"php_stack_frames\"\n    Rule          \"php_stack_frames\" \"/^\\s+thrown in /\" \"start_state\"\n[MULTILINE_PARSER]\n    # Fluentbit has built in ruby parser: https://github.com/fluent/fluent-bit/blob/master/src/multiline/flb_ml_parser_ruby.c, but it's not compatible with fluentd rules.\n    # Fluentd rules reference: https://github.com/GoogleCloudPlatform/fluent-plugin-detect-exceptions/blob/master/lib/fluent/plugin/exception_detector.rb#L109\n    Name          custom_ruby\n    Type          regex\n    Key_Content   message\n    Flush_Timeout 1000\n    Rule          \"start_state\"             \"/Error \\(.*\\):$/\"          \"ruby_before_rails_trace\"\n    Rule          \"ruby_before_rails_trace\" \"/^  $/\"                    \"ruby\"\n    Rule          \"ruby_before_rails_trace\" \"/^[\\t ]+.*?\\.rb:\\d+:in `/\" \"ruby\"\n    Rule          \"ruby\"                    \"/^[\\t ]+.*?\\.rb:\\d+:in `/\" \"ruby\"\n[MULTILINE_PARSER]\n    # Fluentd rules reference: https://github.com/GoogleCloudPlatform/fluent-plugin-detect-exceptions/blob/master/lib/fluent/plugin/exception_detector.rb#L116\n    Name          dart\n    Type          regex\n    Key_Content   message\n    Flush_Timeout 1000\n    Rule          \"start_state\"           \"/^Unhandled exception:$/\"                \"dart_exc\"\n    Rule          \"dart_exc\"              \"/^Instance of/\"                          \"dart_stack\"\n    Rule          \"dart_exc\"              \"/^Exception/\"                            \"dart_stack\"\n    Rule          \"dart_exc\"              \"/^Bad state/\"                            \"dart_stack\"\n    Rule          \"dart_exc\"              \"/^IntegerDivisionByZeroException/\"       \"dart_stack\"\n    Rule          \"dart_exc\"              \"/^Invalid argument/\"                     \"dart_stack\"\n    Rule          \"dart_exc\"              \"/^RangeError/\"                           \"dart_stack\"\n    Rule          \"dart_exc\"              \"/^Assertion failed/\"                     \"dart_stack\"\n    Rule          \"dart_exc\"              \"/^Cannot instantiate/\"                   \"dart_stack\"\n    Rule          \"dart_exc\"              \"/^Reading static variable/\"              \"dart_stack\"\n    Rule          \"dart_exc\"              \"/^UnimplementedError/\"                   \"dart_stack\"\n    Rule          \"dart_exc\"              \"/^Unsupported operation/\"                \"dart_stack\"\n    Rule          \"dart_exc\"              \"/^Concurrent modification/\"              \"dart_stack\"\n    Rule          \"dart_exc\"              \"/^Out of Memory/\"                        \"dart_stack\"\n    Rule          \"dart_exc\"              \"/^Stack Overflow/\"                       \"dart_stack\"\n    Rule          \"dart_exc\"              \"/^'.+?':.+?$/\"                           \"dart_type_err_line1\"\n    Rule          \"dart_type_err_line1\"   \"/^#\\d+\\s+.+?\\(.+?\\)$/\"         \"dart_stack\"\n    Rule          \"dart_type_err_line1\"   \"/^.+?$/\"                       \"dart_type_err_line2\"\n    Rule          \"dart_type_err_line2\"   \"/^.*?\\^.*?$/\"                  \"dart_type_err_line3\"\n    Rule          \"dart_type_err_line3\"   \"/^$/\"                          \"dart_type_err_line4\"\n    Rule          \"dart_type_err_line4\"   \"/^$/\"                          \"dart_stack\"\n    Rule          \"dart_exc\"              \"/^FormatException/\"            \"dart_format_err_line1\"\n    Rule          \"dart_format_err_line1\" \"/^#\\d+\\s+.+?\\(.+?\\)$/\"         \"dart_stack\"\n    Rule          \"dart_format_err_line1\" \"/^./\"                          \"dart_format_err_line2\"\n    Rule          \"dart_format_err_line2\" \"/^.*?\\^/\"                      \"dart_format_err_line3\"\n    Rule          \"dart_format_err_line3\" \"/^$/\"                          \"dart_stack\"\n    Rule          \"dart_exc\"              \"/^NoSuchMethodError:/\"         \"dart_method_err_line1\"\n    Rule          \"dart_method_err_line1\" \"/^Receiver:/\"                  \"dart_method_err_line2\"\n    Rule          \"dart_method_err_line2\" \"/^Tried calling:/\"             \"dart_method_err_line3\"\n    Rule          \"dart_method_err_line3\" \"/^Found:/\"                     \"dart_stack\"\n    Rule          \"dart_method_err_line3\" \"/^#\\d+\\s+.+?\\(.+?\\)$/\"         \"dart_stack\"\n    Rule          \"dart_stack\"            \"/^#\\d+\\s+.+?\\(.+?\\)$/\"         \"dart_stack\"\n    Rule          \"dart_stack\"            \"/^\u003casynchronous suspension\u003e$/\" \"dart_stack\"","redact_kubelet.lua":"function redact_sensitive_info(tag, timestamp, record)\n  message = record[\"MESSAGE\"]\n  if message then\n    if string.find(message, \"access_token=ya29.[a-zA-Z0-9._-]*\") then\n      local redact_message = string.gsub(message, \"access_token=ya29.[a-zA-Z0-9._-]*\", \"access_token=\u003cREDACTED\u003e\")\n      record[\"MESSAGE\"] = redact_message\n      return 2, timestamp, record\n    end\n  end\n  return 0, timestamp, record\nend"},"kind":"ConfigMap","metadata":{"annotations":{"components.gke.io/component-name":"fluentbit","components.gke.io/component-version":"1.36.3-gke.0"},"creationTimestamp":"2026-06-26T18:19:17Z","labels":{"addonmanager.kubernetes.io/mode":"Reconcile"},"name":"fluentbit-gke-config","namespace":"kube-system","resourceVersion":"1782516367999711023","uid":"7414a7d9-be31-4cdd-8730-c5f140072a19"}}
+  creationTimestamp: "2026-06-26T18:19:17Z"
+  labels:
+    addonmanager.kubernetes.io/mode: Reconcile
+  name: fluentbit-gke-config
+  namespace: kube-system
+  resourceVersion: "1782517210631439023"
+  uid: 7414a7d9-be31-4cdd-8730-c5f140072a19

@@ -1,0 +1,5 @@
+{
+  "summary": "hypotheses.jsonl seeds the initial list of hypotheses to test across resource limits, worker thread counts, compression config, and code-level modifications.",
+  "updatedAt": "2026-06-26T20:06:49.624984302Z",
+  "userFacing": true
+}

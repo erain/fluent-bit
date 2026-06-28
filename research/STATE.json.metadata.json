@@ -1,0 +1,5 @@
+{
+  "summary": "STATE.json is the cursor/state tracking file for the research program, storing current phase, day, and active champion details.",
+  "updatedAt": "2026-06-26T20:06:43.102184646Z",
+  "userFacing": true
+}

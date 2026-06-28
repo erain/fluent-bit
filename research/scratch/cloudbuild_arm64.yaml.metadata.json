@@ -1,0 +1,4 @@
+{
+  "summary": "Cloud Build configuration for building arm64-only Fluent Bit image using docker buildx with a 2-hour timeout.",
+  "updatedAt": "2026-06-27T15:37:09.361405302Z"
+}

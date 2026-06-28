@@ -1,0 +1,4 @@
+{
+  "summary": "Cloud Build configuration for building multi-architecture (linux/amd64, linux/arm64) Fluent Bit image using docker buildx.",
+  "updatedAt": "2026-06-27T14:25:52.136053831Z"
+}

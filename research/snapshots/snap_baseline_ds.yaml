@@ -1,0 +1,391 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  annotations:
+    deprecated.daemonset.template.generation: "3"
+  creationTimestamp: "2026-06-26T18:19:19Z"
+  generation: 3
+  labels:
+    addonmanager.kubernetes.io/mode: Reconcile
+    k8s-app: fluentbit-gke
+    kubernetes.io/cluster-service: "true"
+  name: fluentbit-gke
+  namespace: kube-system
+  resourceVersion: "1782500422527039019"
+  uid: 84988112-b4e6-4844-832e-9389f8b00817
+spec:
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      component: fluentbit-gke
+      k8s-app: fluentbit-gke
+  template:
+    metadata:
+      annotations:
+        EnableNodeJournal: "false"
+        EnablePodSecurityPolicy: "false"
+        SystemOnlyLogging: "false"
+        components.gke.io/component-name: fluentbit
+        components.gke.io/component-version: 1.36.3-gke.0
+        kubectl.kubernetes.io/restartedAt: "2026-06-26T19:00:07Z"
+        monitoring.gke.io/path: /api/v1/metrics/prometheus
+      labels:
+        component: fluentbit-gke
+        k8s-app: fluentbit-gke
+        kubernetes.io/cluster-service: "true"
+    spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: cloud.google.com/gke-max-pods-per-node
+                operator: DoesNotExist
+              - key: cloud.google.com/gke-logging-variant
+                operator: NotIn
+                values:
+                - MAX_THROUGHPUT
+              - key: cloud.google.com/autopilot-managed-node
+                operator: NotIn
+                values:
+                - "true"
+            - matchExpressions:
+              - key: cloud.google.com/gke-max-pods-per-node
+                operator: Lt
+                values:
+                - "111"
+              - key: cloud.google.com/gke-logging-variant
+                operator: NotIn
+                values:
+                - MAX_THROUGHPUT
+              - key: cloud.google.com/autopilot-managed-node
+                operator: NotIn
+                values:
+                - "true"
+      containers:
+      - command:
+        - /metadata-server-sidecar
+        - --logtostderr
+        - --port=2022
+        - --enable-health-check=true
+        - --enable-metadata-fetch=true
+        env:
+        - name: GOOGLE_APPLICATION_CREDENTIALS
+          value: /var/run/token_broker/adc/google-application-credentials.json
+        image: us-central1-artifactregistry.gcr.io/gke-release-staging/gke-release-staging/metadata-server-sidecar:v1.0.8-gke.5@sha256:e89744d38a41527d430f27b1e0435d738e13f9317c9f7a19b10716b67b26ea0c
+        imagePullPolicy: IfNotPresent
+        name: metadata-server-sidecar
+        ports:
+        - containerPort: 2022
+          protocol: TCP
+        resources: {}
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - all
+          readOnlyRootFilesystem: true
+          runAsGroup: 1002
+          runAsNonRoot: true
+          runAsUser: 1002
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        volumeMounts:
+        - mountPath: /var/run/token_broker/ksa
+          name: token-broker-ksa
+          readOnly: true
+        - mountPath: /var/run/token_broker/adc
+          name: token-broker-adc
+          readOnly: true
+        - mountPath: /etc/ssl/certs
+          name: certs
+          readOnly: true
+      - command:
+        - /fluent-bit/bin/fluent-bit
+        - -c
+        - /fluent-bit/etc/fluent-bit.yaml
+        env:
+        - name: METADATA_SERVER
+          value: http://127.0.0.1:2022
+        - name: ENABLE_FILTER_REPEATED_LOGS
+          value: "true"
+        - name: RATE_LIMITER_TIME_PERIOD_SECONDS
+          value: "60"
+        - name: RATE_LIMITER_RECORDS_PER_PERIOD_PER_MODULE
+          value: "2"
+        - name: RESOURCE_MODEL
+          value: k8s
+        - name: TAG_DELIMITER
+          value: _
+        - name: GCE_METADATA_FILE
+          value: /fluent-bit/lua-filters/gce-metadata.data
+        - name: SYSTEM_NAMESPACE_LIST
+          value: kube-system,istio-system,knative-serving,gke-system,config-management-system,gmp-system,gke-managed-cim,gke-managed-volumepopulator,gke-managed-checkpointing,gke-managed-lustrecsi,gke-managed-otel,gke-managed-mldiagnostics,gke-managed-networking-dra-driver,gke-managed-pod-snapshots,gke-managed-slurm
+        - name: SYSTEM_NAMESPACE_DELIMITER
+          value: ','
+        - name: HOST_IP
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: status.hostIP
+        - name: STREAM_AS_LOG_NAME
+          value: "true"
+        image: us-central1-artifactregistry.gcr.io/gke-release-staging/gke-release-staging/fluent-bit:v0.0.422-gke.2@sha256:4b5df304074c9f2842f16ef4869c0ec253c2d91d6478e5aa42d2f8dce9146b45
+        imagePullPolicy: IfNotPresent
+        livenessProbe:
+          failureThreshold: 3
+          httpGet:
+            path: /healthz
+            port: 2022
+            scheme: HTTP
+          initialDelaySeconds: 120
+          periodSeconds: 60
+          successThreshold: 1
+          timeoutSeconds: 5
+        name: fluentbit
+        resources:
+          limits:
+            memory: 404Mi
+          requests:
+            cpu: 100m
+            memory: 200Mi
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            add:
+            - DAC_OVERRIDE
+            drop:
+            - all
+          readOnlyRootFilesystem: true
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        volumeMounts:
+        - mountPath: /var/log
+          name: varlog
+        - mountPath: /var/lib/docker/containers
+          name: varlibdockercontainers
+          readOnly: true
+        - mountPath: /var/lib/google-fluentbit/pos-files
+          name: varlibgooglefluentbitpos
+        - mountPath: /fluent-bit/lua-filters/
+          name: lua-filters-volume
+        - mountPath: /fluent-bit/etc/
+          name: config-volume
+      - env:
+        - name: TOKEN_SOURCE_MODE
+          value: MODE_TOKEN_BROKER_WITH_FALLBACK
+        - name: GKE_NODE_SYSTEM_WORKLOAD_CREDENTIALS
+          value: /var/run/token_broker/adc/google-application-credentials.json
+        - name: GKE_HOSTNAME
+          value: test-container.sandbox.googleapis.com
+        - name: GOMAXPROCS
+          value: "2"
+        - name: COLLECTOR_CONFIG_PATH
+          value: /conf/fluentbit-metrics-collector-config-data.textproto
+        - name: SPLIT_GAUGE_BUFFER
+          value: "true"
+        - name: PROJECT_NUMBER
+          value: "1041222046261"
+        - name: LOCATION
+          value: us-central1-a
+        - name: CLUSTER_NAME
+          value: fluent-bit-agent-x86
+        - name: POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+        - name: NODE_NAME
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: spec.nodeName
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.name
+        - name: CONTAINER_NAME
+          value: fluentbit-metrics-collector
+        - name: COMPONENT_VERSION
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.annotations['components.gke.io/component-version']
+        - name: COMPONENT_NAME
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.annotations['components.gke.io/component-name']
+        image: us-central1-artifactregistry.gcr.io/gke-release-staging/gke-release-staging/gke-metrics-collector:20260531_2300_RC0@sha256:6fb33c11f0e7e76b3c959b780ac724dc838bd1ccda109ac8219b4c8a3172ea73
+        imagePullPolicy: IfNotPresent
+        name: fluentbit-metrics-collector
+        resources:
+          limits:
+            cpu: "1"
+            memory: 65Mi
+          requests:
+            cpu: 5m
+            memory: 30Mi
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - all
+          readOnlyRootFilesystem: true
+          runAsGroup: 1001
+          runAsNonRoot: true
+          runAsUser: 1001
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        volumeMounts:
+        - mountPath: /var/run/token_broker/ksa
+          name: token-broker-ksa
+          readOnly: true
+        - mountPath: /var/run/token_broker/adc
+          name: token-broker-adc
+          readOnly: true
+        - mountPath: /conf
+          name: fluentbit-metrics-collector-config-map-vol
+      dnsPolicy: Default
+      hostNetwork: true
+      initContainers:
+      - command:
+        - /node_token_broker_init
+        - --audience=https://test-container.sandbox.googleapis.com/v1/projects/1041222046261/locations/us-central1-a/clusters/fluent-bit-agent-x86/generateClusterNodeAgentToken
+        - --token_url=https://test-container.sandbox.googleapis.com/v1/projects/1041222046261/locations/us-central1-a/clusters/fluent-bit-agent-x86/generateClusterNodeAgentToken
+        - --token_file=/var/run/token_broker/ksa/token
+        - --output_path=/var/run/token_broker/adc/google-application-credentials.json
+        - --project_id=timbai-gke-dev
+        image: us-central1-artifactregistry.gcr.io/gke-release-staging/gke-release-staging/node_token_broker/init:gke_node_token_broker_init_20260410.00_p0@sha256:48b18ce5260a479f47611fdff76075e816422c28dce0cab772ba627c508159b4
+        imagePullPolicy: IfNotPresent
+        name: token-broker-adc-init
+        resources: {}
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        volumeMounts:
+        - mountPath: /var/run/token_broker/adc
+          name: token-broker-adc
+      - command:
+        - /bin/bash
+        - -c
+        - |-
+          set -e;
+          /lua_filters/main --gce_metadata_file=/fluent-bit/lua-filters/gce-metadata.data;
+          cp /lua_filters/parser.lua /fluent-bit/lua-filters/parser.lua;
+          cp /lua_filters/rate_limiter.lua /fluent-bit/lua-filters/rate_limiter.lua;
+          cp /lua_filters/json.lua /fluent-bit/lua-filters/json.lua;
+        image: us-central1-artifactregistry.gcr.io/gke-release-staging/gke-release-staging/fluentbit-lua-filters:20251026_2300_RC0@sha256:f04269dd6288185b5163533dcaf324e4388a7607bd99c85f1d13446d5e839c17
+        imagePullPolicy: IfNotPresent
+        name: load-lua-filters
+        resources: {}
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        volumeMounts:
+        - mountPath: /fluent-bit/lua-filters/
+          name: lua-filters-volume
+      - command:
+        - /bin/bash
+        - -c
+        - |-
+          set -e;
+          if [ -d "/var/lib/google-fluentbit/pos-files" ] && [ "$(ls -A /var/lib/google-fluentbit/pos-files)" ]; then
+            exit 0;
+          fi;
+          if [ -d "/var/run/google-fluentbit/pos-files" ] && [ "$(ls -A /var/run/google-fluentbit/pos-files)" ]; then
+            rm -rf /var/lib/google-fluentbit/pos-files.staged;
+            rm -rf /var/lib/google-fluentbit/pos-files;
+            cp -r /var/run/google-fluentbit/pos-files /var/lib/google-fluentbit/pos-files.staged;
+            mv /var/lib/google-fluentbit/pos-files.staged /var/lib/google-fluentbit/pos-files;
+            rm -rf /var/run/google-fluentbit/pos-files;
+          fi
+        image: us-central1-artifactregistry.gcr.io/gke-release-staging/gke-release-staging/gke-distroless/bash:gke_distroless_20260601.00_p0@sha256:3a4553b24025243918522d0deafeaf325410aae5f682723cdc32e0cbf786a6cd
+        imagePullPolicy: IfNotPresent
+        name: fluentbit-gke-init
+        resources: {}
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        volumeMounts:
+        - mountPath: /var/lib/google-fluentbit
+          name: varlibgooglefluentbit
+        - mountPath: /var/run/google-fluentbit
+          name: varrungooglefluentbit
+      nodeSelector:
+        kubernetes.io/os: linux
+      priorityClassName: system-node-critical
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
+      serviceAccount: fluentbit-gke
+      serviceAccountName: fluentbit-gke
+      terminationGracePeriodSeconds: 120
+      tolerations:
+      - effect: NoExecute
+        operator: Exists
+      - effect: NoSchedule
+        operator: Exists
+      - key: components.gke.io/gke-managed-components
+        operator: Exists
+      volumes:
+      - hostPath:
+          path: /etc/ssl/certs
+          type: Directory
+        name: certs
+      - name: token-broker-ksa
+        projected:
+          defaultMode: 420
+          sources:
+          - serviceAccountToken:
+              audience: https://test-container.sandbox.googleapis.com/v1/projects/1041222046261/locations/us-central1-a/clusters/fluent-bit-agent-x86/generateClusterNodeAgentToken
+              expirationSeconds: 3600
+              path: token
+      - emptyDir: {}
+        name: token-broker-adc
+      - hostPath:
+          path: /var/run/google-fluentbit
+          type: DirectoryOrCreate
+        name: varrungooglefluentbit
+      - hostPath:
+          path: /var/log
+          type: Directory
+        name: varlog
+      - hostPath:
+          path: /var/lib/docker/containers
+          type: Directory
+        name: varlibdockercontainers
+      - hostPath:
+          path: /var/lib/google-fluentbit
+          type: DirectoryOrCreate
+        name: varlibgooglefluentbit
+      - hostPath:
+          path: /var/lib/google-fluentbit/pos-files
+          type: DirectoryOrCreate
+        name: varlibgooglefluentbitpos
+      - emptyDir: {}
+        name: lua-filters-volume
+      - configMap:
+          defaultMode: 420
+          name: fluentbit-gke-config
+        name: config-volume
+      - configMap:
+          defaultMode: 420
+          items:
+          - key: fluentbit-metrics-collector-config-data
+            path: fluentbit-metrics-collector-config-data.textproto
+          name: fluentbit-metrics-collector-config-map
+        name: fluentbit-metrics-collector-config-map-vol
+  updateStrategy:
+    rollingUpdate:
+      maxSurge: 0
+      maxUnavailable: 10%
+    type: RollingUpdate
+status:
+  currentNumberScheduled: 3
+  desiredNumberScheduled: 3
+  numberAvailable: 3
+  numberMisscheduled: 0
+  numberReady: 3
+  observedGeneration: 3
+  updatedNumberScheduled: 3

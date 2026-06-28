@@ -1,0 +1,14 @@
+steps:
+- name: 'gcr.io/cloud-builders/docker'
+  args: ['buildx', 'create', '--name', 'mybuilder', '--use']
+- name: 'gcr.io/cloud-builders/docker'
+  args: [
+    'buildx', 'build',
+    '--platform', 'linux/amd64,linux/arm64',
+    '-t', 'us-central1-docker.pkg.dev/timbai-gke-dev/gke-component-images/fluentbit:opt-day3-test-2',
+    '--push',
+    '-f', 'Dockerfile',
+    '.'
+  ]
+options:
+  logging: CLOUD_LOGGING_ONLY
