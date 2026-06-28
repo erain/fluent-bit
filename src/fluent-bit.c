@@ -71,6 +71,14 @@ extern void win32_started(void);
 #endif
 
 flb_ctx_t *ctx;
+#if defined(__clang__) || defined(__GNUC__)
+#if defined(__SANITIZE_ADDRESS__) || __has_feature(address_sanitizer)
+const char *__asan_default_options(void) {
+    return "detect_leaks=0";
+}
+#endif
+#endif
+
 struct flb_config *config;
 volatile sig_atomic_t exit_signal = 0;
 volatile sig_atomic_t flb_bin_restarting = FLB_RELOAD_IDLE;

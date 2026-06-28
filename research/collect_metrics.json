@@ -1,0 +1,22 @@
+Scraping T0 metrics for context gke_timbai-gke-dev_us-central1-a_fluent-bit-agent-arm64...
+Waiting 30 seconds for the measurement window...
+Scraping T1 metrics...
+Scraping resource usage via top...
+{
+  "actual_window_s": 33.7,
+  "egress_records_s": 1177,
+  "egress_bytes_s": 2137464,
+  "cpu_cores_used": 0.501,
+  "mem_used_mb": 1154,
+  "per_core_efficiency": 2350,
+  "retries": 0,
+  "retries_failed": 0,
+  "errors": 0,
+  "dropped": 0,
+  "backlog_trend": "up",
+  "t0_total_chunks": 3,
+  "t1_total_chunks": 6,
+  "generated_records": 0,
+  "delivered_records": 0,
+  "delivery_ratio": 1.0
+}

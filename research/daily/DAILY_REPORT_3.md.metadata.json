@@ -1,5 +1,0 @@
-{
-  "summary": "Daily report for Day 3 and 4 of the Fluent Bit GKE Logging auto-research program. Documents the gitignore fix, segment fault crash resolution, L2/L3 stress calibration, and workload diversity results.",
-  "updatedAt": "2026-06-27T02:04:54.467232341Z",
-  "userFacing": true
-}

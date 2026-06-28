@@ -1,5 +1,0 @@
-{
-  "summary": "loadgen.yaml is the load generator Kubernetes manifest. It deploys replica pods running a python loop to emit log lines with gen_id and seq.",
-  "updatedAt": "2026-06-26T20:09:05.817571139Z",
-  "userFacing": true
-}

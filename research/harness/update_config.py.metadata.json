@@ -1,5 +1,0 @@
-{
-  "summary": "Harness script to update GKE ConfigMaps and DaemonSets and execute restarts.",
-  "updatedAt": "2026-06-26T22:29:11.941486823Z",
-  "userFacing": true
-}

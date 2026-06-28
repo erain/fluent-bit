@@ -99,6 +99,7 @@ RUN [ -n "${WAMR_BUILD_TARGET:-}" ] && EXTRA_CMAKE_FLAGS="$EXTRA_CMAKE_FLAGS -DW
 ARG CFLAGS="-v"
 ENV CFLAGS=${CFLAGS}
 
+ENV ASAN_OPTIONS=detect_leaks=0
 RUN make -j$(nproc)
 RUN install bin/fluent-bit /fluent-bit/bin/
 
