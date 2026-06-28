@@ -3660,6 +3660,56 @@ void flb_test_resource_k8s_container_multi_tag_value()
     flb_destroy(ctx);
 }
 
+void flb_test_resource_k8s_container_concurrency()
+{
+    int ret;
+    int i;
+    int k;
+    flb_ctx_t *ctx;
+    int in_ffd[5];
+    int out_ffd;
+    char payload[512];
+    char tag[32];
+
+    ctx = flb_create();
+    flb_service_set(ctx, "flush", "1", "grace", "1", NULL);
+
+    for (k = 0; k < 5; k++) {
+        in_ffd[k] = flb_input(ctx, (char *) "lib", NULL);
+        snprintf(tag, sizeof(tag), "test.%d", k);
+        flb_input_set(ctx, in_ffd[k], "tag", tag, NULL);
+    }
+
+    out_ffd = flb_output(ctx, (char *) "stackdriver", NULL);
+    flb_output_set(ctx, out_ffd,
+                   "match", "test.*",
+                   "resource", "k8s_container",
+                   "google_service_credentials", SERVICE_CREDENTIALS,
+                   "k8s_cluster_name", "test_cluster_name",
+                   "k8s_cluster_location", "test_cluster_location",
+                   "workers", "2",
+                   NULL);
+
+    ret = flb_start(ctx);
+    TEST_CHECK(ret == 0);
+
+    for (i = 0; i < 500; i++) {
+        for (k = 0; k < 5; k++) {
+            snprintf(payload, sizeof(payload),
+                     "[1591649196, {"
+                     "\"message\": \"concurrency_test_inp%d_rec%d\","
+                     "\"logging.googleapis.com/local_resource_id\": \"k8s_container.ns_%d.pod_%d.ctr_%d\""
+                     "}]", k, i, i + (k * 1000), i + (k * 1000), i + (k * 1000));
+            flb_lib_push(ctx, in_ffd[k], payload, strlen(payload));
+        }
+    }
+
+    sleep(4);
+    flb_stop(ctx);
+    flb_destroy(ctx);
+}
+
+
 void flb_test_resource_k8s_container_custom_tag_prefix()
 {
     int ret;
@@ -6603,6 +6653,7 @@ TEST_LIST = {
     {"resource_k8s_container_common", flb_test_resource_k8s_container_common },
     {"resource_k8s_container_no_local_resource_id", flb_test_resource_k8s_container_no_local_resource_id },
     {"resource_k8s_container_multi_tag_value", flb_test_resource_k8s_container_multi_tag_value } ,
+    {"resource_k8s_container_concurrency", flb_test_resource_k8s_container_concurrency },
     {"resource_k8s_container_custom_tag_prefix", flb_test_resource_k8s_container_custom_tag_prefix },
     {"resource_k8s_container_custom_tag_prefix_with_dot", flb_test_resource_k8s_container_custom_tag_prefix_with_dot },
     {"resource_k8s_container_default_tag_regex", flb_test_resource_k8s_container_default_tag_regex },
