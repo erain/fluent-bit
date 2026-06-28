@@ -1341,6 +1341,14 @@ static int cb_stackdriver_init(struct flb_output_instance *ins,
     }
     ctx->token_mutex_initialized = FLB_TRUE;
 
+    /* Create mutex for resource labels extraction */
+    ret = pthread_mutex_init(&ctx->resource_mutex, NULL);
+    if (ret != 0) {
+        flb_plg_error(ins, "failed to initialize resource mutex");
+        goto error;
+    }
+    ctx->resource_mutex_initialized = FLB_TRUE;
+
     /* Create Upstream context for Stackdriver Logging (no oauth2 service) */
     ctx->u = flb_upstream_create_url(config, ctx->cloud_logging_write_url,
                                      io_flags, ins->tls);
@@ -1417,6 +1425,10 @@ static int cb_stackdriver_init(struct flb_output_instance *ins,
     return 0;
 
 error:
+    if (ctx->resource_mutex_initialized == FLB_TRUE) {
+        pthread_mutex_destroy(&ctx->resource_mutex);
+        ctx->resource_mutex_initialized = FLB_FALSE;
+    }
     if (ctx->token_mutex_initialized == FLB_TRUE) {
         pthread_mutex_destroy(&ctx->token_mutex);
         ctx->token_mutex_initialized = FLB_FALSE;
@@ -1721,8 +1733,9 @@ static int pack_payload(int insert_id_extracted,
         }
 
         /* processing logging.googleapis.com/operation */
-        if (validate_key(kv->key, OPERATION_FIELD_IN_JSON,
-                         OPERATION_KEY_SIZE)
+        if (operation_extracted == FLB_TRUE
+            && validate_key(kv->key, OPERATION_FIELD_IN_JSON,
+                            OPERATION_KEY_SIZE)
             && kv->val.type == MSGPACK_OBJECT_MAP) {
             if (operation_extra_size > 0) {
                 msgpack_pack_object(mp_pck, kv->key);
@@ -1731,8 +1744,9 @@ static int pack_payload(int insert_id_extracted,
             continue;
         }
 
-        if (validate_key(kv->key, SOURCELOCATION_FIELD_IN_JSON,
-                         SOURCE_LOCATION_SIZE)
+        if (source_location_extracted == FLB_TRUE
+            && validate_key(kv->key, SOURCELOCATION_FIELD_IN_JSON,
+                            SOURCE_LOCATION_SIZE)
             && kv->val.type == MSGPACK_OBJECT_MAP) {
 
             if (source_location_extra_size > 0) {
@@ -1743,8 +1757,9 @@ static int pack_payload(int insert_id_extracted,
             continue;
         }
 
-        if (validate_key(kv->key, ctx->http_request_key,
-                         ctx->http_request_key_size)
+        if (http_request_extracted == FLB_TRUE
+            && validate_key(kv->key, ctx->http_request_key,
+                            ctx->http_request_key_size)
             && kv->val.type == MSGPACK_OBJECT_MAP) {
 
             if(http_request_extra_size > 0) {
@@ -1899,6 +1914,8 @@ static flb_sds_t stackdriver_format(struct flb_stackdriver *ctx,
 
     struct flb_log_event_decoder log_decoder;
     struct flb_log_event log_event;
+    struct flb_mp_map_header entries_mh;
+    int records_count = 0;
 
     ret = flb_log_event_decoder_init(&log_decoder, (char *) data, bytes);
 
@@ -1907,36 +1924,6 @@ static flb_sds_t stackdriver_format(struct flb_stackdriver *ctx,
                       "Log event decoder initialization error : %d", ret);
 
         return NULL;
-    }
-
-    /*
-     * Search each entry and validate insertId.
-     * Reject the entry if insertId is invalid.
-     * If all the entries are rejected, stop formatting.
-     *
-     */
-    while ((ret = flb_log_event_decoder_next(
-                    &log_decoder,
-                    &log_event)) == FLB_EVENT_DECODER_SUCCESS) {
-        /* Extract insertId */
-        in_status = validate_insert_id(&insert_id_obj, log_event.body);
-
-        if (in_status == INSERTID_INVALID) {
-            flb_plg_error(ctx->ins,
-                          "Incorrect insertId received. InsertId should be non-empty string.");
-            array_size -= 1;
-        }
-    }
-
-    flb_log_event_decoder_destroy(&log_decoder);
-
-    /* Sounds like this should compare to -1 instead of zero */
-    if (array_size == 0) {
-        return NULL;
-    }
-
-    if (formatted_records != NULL) {
-        *formatted_records = array_size;
     }
 
     /* Create temporal msgpack buffer */
@@ -1974,15 +1961,18 @@ static flb_sds_t stackdriver_format(struct flb_stackdriver *ctx,
 
     ret = pack_resource_labels(ctx, &mh, &mp_pck, data, bytes);
     if (ret != 0) {
+        pthread_mutex_lock(&ctx->resource_mutex);
         if (ctx->resource_type == RESOURCE_TYPE_K8S) {
             ret = extract_local_resource_id(data, bytes, ctx, tag);
             if (ret != 0) {
                 flb_plg_error(ctx->ins, "fail to construct local_resource_id");
+                pthread_mutex_unlock(&ctx->resource_mutex);
                 msgpack_sbuffer_destroy(&mp_sbuf);
                 return NULL;
             }
         }
         ret = parse_monitored_resource(ctx, data, bytes, &mp_pck);
+        pthread_mutex_unlock(&ctx->resource_mutex);
         if (ret != 0) {
             if (strcmp(ctx->resource, "global") == 0) {
                 /* global resource has field project_id */
@@ -2337,18 +2327,8 @@ static flb_sds_t stackdriver_format(struct flb_stackdriver *ctx,
     msgpack_pack_str(&mp_pck, 7);
     msgpack_pack_str_body(&mp_pck, "entries", 7);
 
-    /* Append entries */
-    msgpack_pack_array(&mp_pck, array_size);
-
-    ret = flb_log_event_decoder_init(&log_decoder, (char *) data, bytes);
-
-    if (ret != FLB_EVENT_DECODER_SUCCESS) {
-        flb_plg_error(ctx->ins,
-                      "Log event decoder initialization error : %d", ret);
-        msgpack_sbuffer_destroy(&mp_sbuf);
-
-        return NULL;
-    }
+    /* Append entries dynamic array */
+    flb_mp_array_header_init(&entries_mh, &mp_pck);
 
     while ((ret = flb_log_event_decoder_next(
                     &log_decoder,
@@ -2448,29 +2428,28 @@ static flb_sds_t stackdriver_format(struct flb_stackdriver *ctx,
         }
 
         /* Extract operation */
-        operation_id = flb_sds_create("");
-        operation_producer = flb_sds_create("");
+        operation_id = NULL;
+        operation_producer = NULL;
         operation_first = FLB_FALSE;
         operation_last = FLB_FALSE;
         operation_extra_size = 0;
         operation_extracted = extract_operation(&operation_id, &operation_producer,
-                                                &operation_first, &operation_last, obj,
-                                                &operation_extra_size);
+                                                &operation_first, &operation_last,
+                                                obj, &operation_extra_size);
 
         if (operation_extracted == FLB_TRUE) {
             entry_size += 1;
         }
 
         /* Extract sourceLocation */
-        source_location_file = flb_sds_create("");
+        source_location_file = NULL;
         source_location_line = 0;
-        source_location_function = flb_sds_create("");
+        source_location_function = NULL;
         source_location_extra_size = 0;
         source_location_extracted = extract_source_location(&source_location_file,
                                                             &source_location_line,
                                                             &source_location_function,
-                                                            obj,
-                                                            &source_location_extra_size);
+                                                            obj, &source_location_extra_size);
 
         if (source_location_extracted == FLB_TRUE) {
             entry_size += 1;
@@ -2694,9 +2673,22 @@ static flb_sds_t stackdriver_format(struct flb_stackdriver *ctx,
 
         msgpack_pack_str(&mp_pck, s);
         msgpack_pack_str_body(&mp_pck, time_formatted, s);
+
+        flb_mp_array_header_append(&entries_mh);
+        records_count++;
     }
 
+    flb_mp_array_header_end(&entries_mh);
     flb_log_event_decoder_destroy(&log_decoder);
+
+    if (records_count == 0) {
+        msgpack_sbuffer_destroy(&mp_sbuf);
+        return NULL;
+    }
+
+    if (formatted_records != NULL) {
+        *formatted_records = records_count;
+    }
 
     /* Convert from msgpack to JSON */
     out_buf = flb_msgpack_raw_to_json_sds(mp_sbuf.data, mp_sbuf.size,
@@ -3070,7 +3062,7 @@ static void cb_stackdriver_flush(struct flb_event_chunk *event_chunk,
     c = flb_http_client(u_conn, FLB_HTTP_POST, FLB_STD_WRITE_URI,
                         compressed_payload_buffer, compressed_payload_size, NULL, 0, NULL, 0);
 
-    flb_http_buffer_size(c, 4192);
+    flb_http_buffer_size(c, 0);
 
     if (ctx->stackdriver_agent) {
         flb_http_add_header(c, "User-Agent", 10,

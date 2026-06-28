@@ -750,6 +750,9 @@ int flb_stackdriver_conf_destroy(struct flb_stackdriver *ctx)
 
     flb_kv_release(&ctx->config_labels);
     flb_kv_release(&ctx->resource_labels_kvs);
+    if (ctx->resource_mutex_initialized) {
+        pthread_mutex_destroy(&ctx->resource_mutex);
+    }
     if (ctx->token_mutex_initialized) {
         pthread_mutex_destroy(&ctx->token_mutex);
     }

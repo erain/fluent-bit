@@ -209,6 +209,10 @@ struct flb_stackdriver {
     pthread_mutex_t token_mutex;
     int token_mutex_initialized;
 
+    /* mutex for resource labels extraction */
+    pthread_mutex_t resource_mutex;
+    int resource_mutex_initialized;
+
     /* upstream context for stackdriver write end-point */
     struct flb_upstream *u;
 
