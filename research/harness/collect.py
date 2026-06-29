@@ -124,49 +124,42 @@ def collect_all(context):
                 time.sleep(1)
     return storage_results, prometheus_results
 
-def query_gcm_log_count(project, cluster, namespace, start_time, end_time, token):
+def query_bq_log_count(project, cluster, namespace, gen_id, start_epoch, end_epoch, token):
     import urllib.request
-    import urllib.parse
     import json
-    import calendar
-
-    f = (f'metric.type="logging.googleapis.com/log_entry_count" AND '
-         f'resource.type="k8s_container" AND '
-         f'resource.labels.namespace_name="{namespace}" AND '
-         f'resource.labels.cluster_name="{cluster}"')
     
-    t0_dt = time.strptime(start_time, "%Y-%m-%dT%H:%M:%SZ")
-    t1_dt = time.strptime(end_time, "%Y-%m-%dT%H:%M:%SZ")
-    duration_s = int(calendar.timegm(t1_dt) - calendar.timegm(t0_dt))
-    if duration_s <= 0:
-        duration_s = 60
-    
-    params = {
-        "filter": f,
-        "interval.startTime": start_time,
-        "interval.endTime": end_time,
-        "aggregation.alignmentPeriod": f"{duration_s}s",
-        "aggregation.perSeriesAligner": "ALIGN_SUM",
-        "aggregation.crossSeriesReducer": "REDUCE_SUM"
+    url = f"https://bigquery.googleapis.com/bigquery/v2/projects/{project}/queries"
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "Content-Type": "application/json"
     }
     
-    encoded_params = urllib.parse.urlencode(params)
-    url = f"https://monitoring.googleapis.com/v3/projects/{project}/timeSeries?{encoded_params}"
+    sql = (
+        f"SELECT count(*) as log_count "
+        f"FROM `{project}.gke_default_logs._AllLogs` "
+        f"WHERE timestamp >= TIMESTAMP_SECONDS({int(start_epoch) - 10}) "
+        f"  AND timestamp <= TIMESTAMP_SECONDS({int(end_epoch) + 300}) "
+        f"  AND JSON_VALUE(resource.labels.cluster_name) = '{cluster}' "
+        f"  AND JSON_VALUE(resource.labels.namespace_name) = '{namespace}' "
+        f"  AND JSON_VALUE(json_payload.gen_id) = '{gen_id}'"
+    )
     
-    req = urllib.request.Request(url)
-    req.add_header("Authorization", f"Bearer {token}")
+    body = {
+        "query": sql,
+        "useLegacySql": False
+    }
     
+    req = urllib.request.Request(url, data=json.dumps(body).encode(), headers=headers, method="POST")
     try:
         with urllib.request.urlopen(req) as response:
-            data = json.loads(response.read().decode())
-            if "timeSeries" in data and len(data["timeSeries"]) > 0:
-                ts = data["timeSeries"][0]
-                if "points" in ts and len(ts["points"]) > 0:
-                    val = ts["points"][0]["value"].get("int64Value", "0")
-                    return int(val)
+            resp_data = json.loads(response.read().decode())
+            rows = resp_data.get("rows", [])
+            if rows and len(rows) > 0:
+                val = rows[0].get("f", [])[0].get("v", "0")
+                return int(val)
             return 0
     except Exception as e:
-        print(f"Warning: Failed to query GCM timeseries: {e}")
+        print(f"Warning: Failed to query BigQuery: {e}")
         return -1
 
 def main():
@@ -311,22 +304,19 @@ def main():
             token = subprocess.run(token_cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True).stdout.strip()
         except Exception as e:
             print(f"Warning: Failed to refresh access token: {e}")
-        # Query GCM log count
-        print("Waiting 180 seconds for GCM metrics to stabilize...")
+        # Query BigQuery log count
+        print("Waiting 180 seconds for BigQuery logs to stabilize...")
         time.sleep(180)
-        print(f"Querying GCM for log count between {t0_time} and {t1_time}...")
+        print(f"Querying BigQuery for log count between {t0_time} and {t1_time}...")
         try:
-            # Add buffer (5s/45s) for ingestion pipeline latency
-            query_t0 = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(t0_epoch - 5))
-            query_t1 = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(t1_epoch + 45))
             cluster_name = context.split("_")[-1]
-            delivered_count = query_gcm_log_count(args.project, cluster_name, "lab-loadgen", query_t0, query_t1, token)
+            delivered_count = query_bq_log_count(args.project, cluster_name, "lab-loadgen", gen_id, t0_epoch, t1_epoch, token)
             if generated_count > 0 and delivered_count >= 0:
                 delivery_ratio = min(1.0, delivered_count / generated_count)
             else:
                 delivery_ratio = -1.0
         except Exception as e:
-            print(f"Warning: GCM query failed: {e}")
+            print(f"Warning: BigQuery query failed: {e}")
             delivery_ratio = -1.0
 
     # Per-core efficiency
