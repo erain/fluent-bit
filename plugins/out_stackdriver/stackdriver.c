@@ -1364,13 +1364,7 @@ static int cb_stackdriver_init(struct flb_output_instance *ins,
     }
     ctx->token_mutex_initialized = FLB_TRUE;
 
-    /* Create mutex for resource labels extraction */
-    ret = pthread_mutex_init(&ctx->resource_mutex, NULL);
-    if (ret != 0) {
-        flb_plg_error(ins, "failed to initialize resource mutex");
-        goto error;
-    }
-    ctx->resource_mutex_initialized = FLB_TRUE;
+
 
     /* Create Upstream context for Stackdriver Logging (no oauth2 service) */
     ctx->u = flb_upstream_create_url(config, ctx->cloud_logging_write_url,
@@ -1448,10 +1442,7 @@ static int cb_stackdriver_init(struct flb_output_instance *ins,
     return 0;
 
 error:
-    if (ctx->resource_mutex_initialized == FLB_TRUE) {
-        pthread_mutex_destroy(&ctx->resource_mutex);
-        ctx->resource_mutex_initialized = FLB_FALSE;
-    }
+
     if (ctx->token_mutex_initialized == FLB_TRUE) {
         pthread_mutex_destroy(&ctx->token_mutex);
         ctx->token_mutex_initialized = FLB_FALSE;

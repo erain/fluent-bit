@@ -136,12 +136,7 @@ struct flb_stackdriver {
     /* kubernetes specific */
     flb_sds_t cluster_name;
     flb_sds_t cluster_location;
-    flb_sds_t namespace_name;
-    flb_sds_t pod_name;
-    flb_sds_t container_name;
-    flb_sds_t node_name;
 
-    flb_sds_t local_resource_id;
     flb_sds_t tag_prefix;
     /* shadow tag_prefix for safe deallocation */
     flb_sds_t tag_prefix_k8s;
@@ -209,9 +204,7 @@ struct flb_stackdriver {
     pthread_mutex_t token_mutex;
     int token_mutex_initialized;
 
-    /* mutex for resource labels extraction */
-    pthread_mutex_t resource_mutex;
-    int resource_mutex_initialized;
+
 
     /* upstream context for stackdriver write end-point */
     struct flb_upstream *u;

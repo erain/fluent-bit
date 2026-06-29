@@ -1,0 +1,621 @@
+Test resource_k8s_container_concurrency...      [2026/06/29 15:55:19.623] [ info] [fluent bit] version=5.0.8, commit=e98a9700ac, pid=2719100
+[2026/06/29 15:55:19.623] [ info] [storage] ver=1.5.4, type=memory, sync=normal, checksum=off, max_chunks_up=128
+[2026/06/29 15:55:19.623] [ info] [simd    ] SSE2
+[2026/06/29 15:55:19.623] [ info] [cmetrics] version=2.1.5
+[2026/06/29 15:55:19.623] [ info] [ctraces ] version=0.7.1
+[2026/06/29 15:55:19.624] [ info] [input:lib:lib.0] initializing
+[2026/06/29 15:55:19.624] [ info] [input:lib:lib.0] storage_strategy='memory' (memory only)
+[2026/06/29 15:55:19.624] [ info] [input:lib:lib.1] initializing
+[2026/06/29 15:55:19.624] [ info] [input:lib:lib.1] storage_strategy='memory' (memory only)
+[2026/06/29 15:55:19.625] [ info] [input:lib:lib.2] initializing
+[2026/06/29 15:55:19.625] [ info] [input:lib:lib.2] storage_strategy='memory' (memory only)
+[2026/06/29 15:55:19.625] [ info] [input:lib:lib.3] initializing
+[2026/06/29 15:55:19.625] [ info] [input:lib:lib.3] storage_strategy='memory' (memory only)
+[2026/06/29 15:55:19.625] [ info] [input:lib:lib.4] initializing
+[2026/06/29 15:55:19.626] [ info] [input:lib:lib.4] storage_strategy='memory' (memory only)
+[2026/06/29 15:55:19.636] [ info] [output:stackdriver:stackdriver.0] metadata_server set to http://metadata.google.internal
+[2026/06/29 15:55:19.639] [error] [output:stackdriver:stackdriver.0] error creating RSA context
+[2026/06/29 15:55:19.639] [error] [output:stackdriver:stackdriver.0] JWT signature generation failed
+[2026/06/29 15:55:19.639] [ warn] [output:stackdriver:stackdriver.0] token retrieval failed
+[2026/06/29 15:55:19.640] [ info] [output:stackdriver:stackdriver.0] worker #0 started
+[2026/06/29 15:55:19.641] [ info] [output:stackdriver:stackdriver.0] worker #1 started
+[2026/06/29 15:55:19.641] [ info] [sp] stream processor started
+[2026/06/29 15:55:19.641] [ info] [engine] Shutdown Grace Period=1, Shutdown Input Grace Period=0
+[2026/06/29 15:55:20.482] [error] [output:stackdriver:stackdriver.0] error creating RSA context
+[2026/06/29 15:55:20.482] [error] [output:stackdriver:stackdriver.0] JWT signature generation failed
+[2026/06/29 15:55:20.482] [error] [output:stackdriver:stackdriver.0] cannot retrieve oauth2 token
+==================
+WARNING: ThreadSanitizer: data race (pid=2719100)
+  Write of size 8 at 0x720c0000e830 by thread T4:
+    #0 flb_metrics_sum /usr/local/google/home/yiyu/src/fluent-bit/src/flb_metrics.c:184 (flb-rt-out_stackdriver+0x125abd) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #1 cb_stackdriver_flush /usr/local/google/home/yiyu/src/fluent-bit/plugins/out_stackdriver/stackdriver.c:3049 (flb-rt-out_stackdriver+0x2de12b) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #2 co_init /usr/local/google/home/yiyu/src/fluent-bit/lib/monkey/deps/flb_libco/amd64.c:117 (flb-rt-out_stackdriver+0xc1ba46) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #3 output_params_set /usr/local/google/home/yiyu/src/fluent-bit/include/fluent-bit/flb_output.h:655 (flb-rt-out_stackdriver+0xb97b6) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #4 flb_output_flush_create /usr/local/google/home/yiyu/src/fluent-bit/include/fluent-bit/flb_output.h:1207 (flb-rt-out_stackdriver+0xb97b6)
+    #5 output_thread /usr/local/google/home/yiyu/src/fluent-bit/src/flb_output_thread.c:307 (flb-rt-out_stackdriver+0xb97b6)
+    #6 flb_net_tcp_connect /usr/local/google/home/yiyu/src/fluent-bit/src/flb_network.c:1361 (flb-rt-out_stackdriver+0xce01b) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #7 flb_io_net_connect /usr/local/google/home/yiyu/src/fluent-bit/src/flb_io.c:129 (flb-rt-out_stackdriver+0x13e0e0) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #8 create_conn /usr/local/google/home/yiyu/src/fluent-bit/src/flb_upstream.c:629 (flb-rt-out_stackdriver+0xe6dd2) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #9 flb_upstream_conn_get /usr/local/google/home/yiyu/src/fluent-bit/src/flb_upstream.c:833 (flb-rt-out_stackdriver+0xe6dd2)
+    #10 cb_stackdriver_flush /usr/local/google/home/yiyu/src/fluent-bit/plugins/out_stackdriver/stackdriver.c:3023 (flb-rt-out_stackdriver+0x2dd6ed) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #11 output_pre_cb_flush /usr/local/google/home/yiyu/src/fluent-bit/include/fluent-bit/flb_output.h:719 (flb-rt-out_stackdriver+0xb8065) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #12 co_init /usr/local/google/home/yiyu/src/fluent-bit/lib/monkey/deps/flb_libco/amd64.c:117 (flb-rt-out_stackdriver+0xc1ba46) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #13 output_params_set /usr/local/google/home/yiyu/src/fluent-bit/include/fluent-bit/flb_output.h:655 (flb-rt-out_stackdriver+0xb97b6) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #14 flb_output_flush_create /usr/local/google/home/yiyu/src/fluent-bit/include/fluent-bit/flb_output.h:1207 (flb-rt-out_stackdriver+0xb97b6)
+    #15 output_thread /usr/local/google/home/yiyu/src/fluent-bit/src/flb_output_thread.c:307 (flb-rt-out_stackdriver+0xb97b6)
+    #16 step_callback /usr/local/google/home/yiyu/src/fluent-bit/src/flb_worker.c:43 (flb-rt-out_stackdriver+0xedce8) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+
+  Previous read of size 8 at 0x720c0000e830 by thread T1:
+    #0 flb_metrics_dump_values /usr/local/google/home/yiyu/src/fluent-bit/src/flb_metrics.c:243 (flb-rt-out_stackdriver+0x125f46) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #1 collect_outputs /usr/local/google/home/yiyu/src/fluent-bit/src/flb_metrics_exporter.c:140 (flb-rt-out_stackdriver+0x127c15) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #2 collect_metrics /usr/local/google/home/yiyu/src/fluent-bit/src/flb_metrics_exporter.c:176 (flb-rt-out_stackdriver+0x127c15)
+    #3 flb_me_fd_event /usr/local/google/home/yiyu/src/fluent-bit/src/flb_metrics_exporter.c:254 (flb-rt-out_stackdriver+0x127c15)
+    #4 flb_engine_handle_event /usr/local/google/home/yiyu/src/fluent-bit/src/flb_engine.c:749 (flb-rt-out_stackdriver+0xd66c7) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #5 flb_engine_start /usr/local/google/home/yiyu/src/fluent-bit/src/flb_engine.c:1146 (flb-rt-out_stackdriver+0xd66c7)
+    #6 flb_lib_worker /usr/local/google/home/yiyu/src/fluent-bit/src/flb_lib.c:909 (flb-rt-out_stackdriver+0x8c4a9) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+
+  Location is heap block of size 40 at 0x720c0000e820 allocated by thread T1:
+    #0 malloc ../../../../src/libsanitizer/tsan/tsan_interceptors_posix.cpp:676 (libtsan.so.2+0x82cec) (BuildId: fd145dff02b87fe539edddbf1ac1ac0067242694)
+    #1 flb_malloc /usr/local/google/home/yiyu/src/fluent-bit/include/fluent-bit/flb_mem.h:80 (flb-rt-out_stackdriver+0x1257c9) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #2 flb_metrics_add /usr/local/google/home/yiyu/src/fluent-bit/src/flb_metrics.c:132 (flb-rt-out_stackdriver+0x1257c9)
+    #3 flb_stackdriver_conf_create /usr/local/google/home/yiyu/src/fluent-bit/plugins/out_stackdriver/stackdriver_conf.c:651 (flb-rt-out_stackdriver+0x2e5baf) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #4 cb_stackdriver_init /usr/local/google/home/yiyu/src/fluent-bit/plugins/out_stackdriver/stackdriver.c:1327 (flb-rt-out_stackdriver+0x2df4a8) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #5 flb_output_init_all /usr/local/google/home/yiyu/src/fluent-bit/src/flb_output.c:1692 (flb-rt-out_stackdriver+0xb6d23) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #6 flb_engine_start /usr/local/google/home/yiyu/src/fluent-bit/src/flb_engine.c:1023 (flb-rt-out_stackdriver+0xd545d) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #7 flb_lib_worker /usr/local/google/home/yiyu/src/fluent-bit/src/flb_lib.c:909 (flb-rt-out_stackdriver+0x8c4a9) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+
+  Thread T4 'flb-out-stackdr' (tid=2719106, running) created by thread T1 at:
+    #0 pthread_create ../../../../src/libsanitizer/tsan/tsan_interceptors_posix.cpp:1041 (libtsan.so.2+0x573d0) (BuildId: fd145dff02b87fe539edddbf1ac1ac0067242694)
+    #1 mk_utils_worker_spawn /usr/local/google/home/yiyu/src/fluent-bit/lib/monkey/mk_core/mk_utils.c:284 (flb-rt-out_stackdriver+0xc191b8) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #2 flb_worker_create /usr/local/google/home/yiyu/src/fluent-bit/src/flb_worker.c:96 (flb-rt-out_stackdriver+0xede71) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #3 flb_tp_thread_start /usr/local/google/home/yiyu/src/fluent-bit/src/flb_thread_pool.c:123 (flb-rt-out_stackdriver+0xf1fed) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #4 flb_tp_thread_start_all /usr/local/google/home/yiyu/src/fluent-bit/src/flb_thread_pool.c:170 (flb-rt-out_stackdriver+0xf211b) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #5 flb_output_thread_pool_start /usr/local/google/home/yiyu/src/fluent-bit/src/flb_output_thread.c:651 (flb-rt-out_stackdriver+0xbd2b5) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #6 flb_output_enable_multi_threading /usr/local/google/home/yiyu/src/fluent-bit/src/flb_output.c:1161 (flb-rt-out_stackdriver+0xb5b56) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #7 flb_output_init_all /usr/local/google/home/yiyu/src/fluent-bit/src/flb_output.c:1703 (flb-rt-out_stackdriver+0xb6d66) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #8 flb_engine_start /usr/local/google/home/yiyu/src/fluent-bit/src/flb_engine.c:1023 (flb-rt-out_stackdriver+0xd545d) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #9 flb_lib_worker /usr/local/google/home/yiyu/src/fluent-bit/src/flb_lib.c:909 (flb-rt-out_stackdriver+0x8c4a9) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+
+  Thread T1 'flb-pipeline' (tid=2719103, running) created by main thread at:
+    #0 pthread_create ../../../../src/libsanitizer/tsan/tsan_interceptors_posix.cpp:1041 (libtsan.so.2+0x573d0) (BuildId: fd145dff02b87fe539edddbf1ac1ac0067242694)
+    #1 mk_utils_worker_spawn /usr/local/google/home/yiyu/src/fluent-bit/lib/monkey/mk_core/mk_utils.c:284 (flb-rt-out_stackdriver+0xc191b8) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #2 do_start /usr/local/google/home/yiyu/src/fluent-bit/src/flb_lib.c:945 (flb-rt-out_stackdriver+0x8a2c2) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #3 flb_start /usr/local/google/home/yiyu/src/fluent-bit/src/flb_lib.c:992 (flb-rt-out_stackdriver+0x8c43a) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #4 flb_test_resource_k8s_container_concurrency /usr/local/google/home/yiyu/src/fluent-bit/tests/runtime/out_stackdriver.c:3693 (flb-rt-out_stackdriver+0x7ee22) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #5 acutest_do_run_ /usr/local/google/home/yiyu/src/fluent-bit/tests/runtime/../lib/acutest/acutest.h:1034 (flb-rt-out_stackdriver+0x89960) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #6 acutest_run_ /usr/local/google/home/yiyu/src/fluent-bit/tests/runtime/../lib/acutest/acutest.h:1205 (flb-rt-out_stackdriver+0x73a22) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #7 main /usr/local/google/home/yiyu/src/fluent-bit/tests/runtime/../lib/acutest/acutest.h:1769 (flb-rt-out_stackdriver+0x73a22)
+
+SUMMARY: ThreadSanitizer: data race /usr/local/google/home/yiyu/src/fluent-bit/src/flb_metrics.c:184 in flb_metrics_sum
+==================
+[2026/06/29 15:55:20.674] [error] [output:stackdriver:stackdriver.0] error creating RSA context
+[2026/06/29 15:55:20.674] [error] [output:stackdriver:stackdriver.0] JWT signature generation failed
+[2026/06/29 15:55:20.675] [error] [output:stackdriver:stackdriver.0] cannot retrieve oauth2 token
+==================
+WARNING: ThreadSanitizer: data race (pid=2719100)
+  Read of size 8 at 0x724800016c30 by thread T3:
+    #0 metric_hash_lookup /usr/local/google/home/yiyu/src/fluent-bit/lib/cmetrics/src/cmt_map.c:88 (flb-rt-out_stackdriver+0x3eddda) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #1 cmt_map_metric_get /usr/local/google/home/yiyu/src/fluent-bit/lib/cmetrics/src/cmt_map.c:228 (flb-rt-out_stackdriver+0x3eddda)
+    #2 cmt_counter_inc /usr/local/google/home/yiyu/src/fluent-bit/lib/cmetrics/src/cmt_counter.c:106 (flb-rt-out_stackdriver+0x3e8e10) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #3 cb_stackdriver_flush /usr/local/google/home/yiyu/src/fluent-bit/plugins/out_stackdriver/stackdriver.c:3045 (flb-rt-out_stackdriver+0x2de0f9) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #4 output_params_set /usr/local/google/home/yiyu/src/fluent-bit/include/fluent-bit/flb_output.h:655 (flb-rt-out_stackdriver+0xb97b6) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #5 flb_output_flush_create /usr/local/google/home/yiyu/src/fluent-bit/include/fluent-bit/flb_output.h:1207 (flb-rt-out_stackdriver+0xb97b6)
+    #6 output_thread /usr/local/google/home/yiyu/src/fluent-bit/src/flb_output_thread.c:307 (flb-rt-out_stackdriver+0xb97b6)
+    #7 flb_net_tcp_connect /usr/local/google/home/yiyu/src/fluent-bit/src/flb_network.c:1361 (flb-rt-out_stackdriver+0xce01b) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #8 flb_io_net_connect /usr/local/google/home/yiyu/src/fluent-bit/src/flb_io.c:129 (flb-rt-out_stackdriver+0x13e0e0) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #9 create_conn /usr/local/google/home/yiyu/src/fluent-bit/src/flb_upstream.c:629 (flb-rt-out_stackdriver+0xe6dd2) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #10 flb_upstream_conn_get /usr/local/google/home/yiyu/src/fluent-bit/src/flb_upstream.c:833 (flb-rt-out_stackdriver+0xe6dd2)
+    #11 cb_stackdriver_flush /usr/local/google/home/yiyu/src/fluent-bit/plugins/out_stackdriver/stackdriver.c:3023 (flb-rt-out_stackdriver+0x2dd6ed) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #12 output_pre_cb_flush /usr/local/google/home/yiyu/src/fluent-bit/include/fluent-bit/flb_output.h:719 (flb-rt-out_stackdriver+0xb8065) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #13 co_init /usr/local/google/home/yiyu/src/fluent-bit/lib/monkey/deps/flb_libco/amd64.c:117 (flb-rt-out_stackdriver+0xc1ba46) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #14 output_params_set /usr/local/google/home/yiyu/src/fluent-bit/include/fluent-bit/flb_output.h:655 (flb-rt-out_stackdriver+0xb97b6) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #15 flb_output_flush_create /usr/local/google/home/yiyu/src/fluent-bit/include/fluent-bit/flb_output.h:1207 (flb-rt-out_stackdriver+0xb97b6)
+    #16 output_thread /usr/local/google/home/yiyu/src/fluent-bit/src/flb_output_thread.c:307 (flb-rt-out_stackdriver+0xb97b6)
+    #17 flb_net_tcp_connect /usr/local/google/home/yiyu/src/fluent-bit/src/flb_network.c:1361 (flb-rt-out_stackdriver+0xce01b) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #18 flb_io_net_connect /usr/local/google/home/yiyu/src/fluent-bit/src/flb_io.c:129 (flb-rt-out_stackdriver+0x13e0e0) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #19 create_conn /usr/local/google/home/yiyu/src/fluent-bit/src/flb_upstream.c:629 (flb-rt-out_stackdriver+0xe6dd2) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #20 flb_upstream_conn_get /usr/local/google/home/yiyu/src/fluent-bit/src/flb_upstream.c:833 (flb-rt-out_stackdriver+0xe6dd2)
+    #21 cb_stackdriver_flush /usr/local/google/home/yiyu/src/fluent-bit/plugins/out_stackdriver/stackdriver.c:3023 (flb-rt-out_stackdriver+0x2dd6ed) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #22 output_pre_cb_flush /usr/local/google/home/yiyu/src/fluent-bit/include/fluent-bit/flb_output.h:719 (flb-rt-out_stackdriver+0xb8065) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #23 co_init /usr/local/google/home/yiyu/src/fluent-bit/lib/monkey/deps/flb_libco/amd64.c:117 (flb-rt-out_stackdriver+0xc1ba46) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #24 output_params_set /usr/local/google/home/yiyu/src/fluent-bit/include/fluent-bit/flb_output.h:655 (flb-rt-out_stackdriver+0xb97b6) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #25 flb_output_flush_create /usr/local/google/home/yiyu/src/fluent-bit/include/fluent-bit/flb_output.h:1207 (flb-rt-out_stackdriver+0xb97b6)
+    #26 output_thread /usr/local/google/home/yiyu/src/fluent-bit/src/flb_output_thread.c:307 (flb-rt-out_stackdriver+0xb97b6)
+    #27 step_callback /usr/local/google/home/yiyu/src/fluent-bit/src/flb_worker.c:43 (flb-rt-out_stackdriver+0xedce8) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+
+  Previous write of size 8 at 0x724800016c30 by thread T4:
+    #0 __cfl_list_add /usr/local/google/home/yiyu/src/fluent-bit/lib/cfl/include/cfl/cfl_list.h:119 (flb-rt-out_stackdriver+0x3ee4b8) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #1 cfl_list_add /usr/local/google/home/yiyu/src/fluent-bit/lib/cfl/include/cfl/cfl_list.h:129 (flb-rt-out_stackdriver+0x3ee4b8)
+    #2 cfl_list_add /usr/local/google/home/yiyu/src/fluent-bit/lib/cfl/include/cfl/cfl_list.h:122 (flb-rt-out_stackdriver+0x3ee4b8)
+    #3 cmt_map_metric_get /usr/local/google/home/yiyu/src/fluent-bit/lib/cmetrics/src/cmt_map.c:247 (flb-rt-out_stackdriver+0x3ee4b8)
+    #4 cmt_counter_inc /usr/local/google/home/yiyu/src/fluent-bit/lib/cmetrics/src/cmt_counter.c:106 (flb-rt-out_stackdriver+0x3e8e10) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #5 cb_stackdriver_flush /usr/local/google/home/yiyu/src/fluent-bit/plugins/out_stackdriver/stackdriver.c:3045 (flb-rt-out_stackdriver+0x2de0f9) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #6 co_init /usr/local/google/home/yiyu/src/fluent-bit/lib/monkey/deps/flb_libco/amd64.c:117 (flb-rt-out_stackdriver+0xc1ba46) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #7 output_params_set /usr/local/google/home/yiyu/src/fluent-bit/include/fluent-bit/flb_output.h:655 (flb-rt-out_stackdriver+0xb97b6) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #8 flb_output_flush_create /usr/local/google/home/yiyu/src/fluent-bit/include/fluent-bit/flb_output.h:1207 (flb-rt-out_stackdriver+0xb97b6)
+    #9 output_thread /usr/local/google/home/yiyu/src/fluent-bit/src/flb_output_thread.c:307 (flb-rt-out_stackdriver+0xb97b6)
+    #10 flb_net_tcp_connect /usr/local/google/home/yiyu/src/fluent-bit/src/flb_network.c:1361 (flb-rt-out_stackdriver+0xce01b) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #11 flb_io_net_connect /usr/local/google/home/yiyu/src/fluent-bit/src/flb_io.c:129 (flb-rt-out_stackdriver+0x13e0e0) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #12 create_conn /usr/local/google/home/yiyu/src/fluent-bit/src/flb_upstream.c:629 (flb-rt-out_stackdriver+0xe6dd2) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #13 flb_upstream_conn_get /usr/local/google/home/yiyu/src/fluent-bit/src/flb_upstream.c:833 (flb-rt-out_stackdriver+0xe6dd2)
+    #14 cb_stackdriver_flush /usr/local/google/home/yiyu/src/fluent-bit/plugins/out_stackdriver/stackdriver.c:3023 (flb-rt-out_stackdriver+0x2dd6ed) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #15 output_pre_cb_flush /usr/local/google/home/yiyu/src/fluent-bit/include/fluent-bit/flb_output.h:719 (flb-rt-out_stackdriver+0xb8065) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #16 co_init /usr/local/google/home/yiyu/src/fluent-bit/lib/monkey/deps/flb_libco/amd64.c:117 (flb-rt-out_stackdriver+0xc1ba46) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #17 output_params_set /usr/local/google/home/yiyu/src/fluent-bit/include/fluent-bit/flb_output.h:655 (flb-rt-out_stackdriver+0xb97b6) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #18 flb_output_flush_create /usr/local/google/home/yiyu/src/fluent-bit/include/fluent-bit/flb_output.h:1207 (flb-rt-out_stackdriver+0xb97b6)
+    #19 output_thread /usr/local/google/home/yiyu/src/fluent-bit/src/flb_output_thread.c:307 (flb-rt-out_stackdriver+0xb97b6)
+    #20 step_callback /usr/local/google/home/yiyu/src/fluent-bit/src/flb_worker.c:43 (flb-rt-out_stackdriver+0xedce8) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+
+  Location is heap block of size 344 at 0x724800016b00 allocated by thread T1:
+    #0 calloc ../../../../src/libsanitizer/tsan/tsan_interceptors_posix.cpp:698 (libtsan.so.2+0x8282f) (BuildId: fd145dff02b87fe539edddbf1ac1ac0067242694)
+    #1 cmt_map_create /usr/local/google/home/yiyu/src/fluent-bit/lib/cmetrics/src/cmt_map.c:38 (flb-rt-out_stackdriver+0x3ef642) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #2 cmt_counter_create /usr/local/google/home/yiyu/src/fluent-bit/lib/cmetrics/src/cmt_counter.c:69 (flb-rt-out_stackdriver+0x3e8cd0) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #3 flb_stackdriver_conf_create /usr/local/google/home/yiyu/src/fluent-bit/plugins/out_stackdriver/stackdriver_conf.c:609 (flb-rt-out_stackdriver+0x2e58fa) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #4 cb_stackdriver_init /usr/local/google/home/yiyu/src/fluent-bit/plugins/out_stackdriver/stackdriver.c:1327 (flb-rt-out_stackdriver+0x2df4a8) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #5 flb_output_init_all /usr/local/google/home/yiyu/src/fluent-bit/src/flb_output.c:1692 (flb-rt-out_stackdriver+0xb6d23) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #6 flb_engine_start /usr/local/google/home/yiyu/src/fluent-bit/src/flb_engine.c:1023 (flb-rt-out_stackdriver+0xd545d) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #7 flb_lib_worker /usr/local/google/home/yiyu/src/fluent-bit/src/flb_lib.c:909 (flb-rt-out_stackdriver+0x8c4a9) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+
+  Thread T3 'flb-out-stackdr' (tid=2719105, running) created by thread T1 at:
+    #0 pthread_create ../../../../src/libsanitizer/tsan/tsan_interceptors_posix.cpp:1041 (libtsan.so.2+0x573d0) (BuildId: fd145dff02b87fe539edddbf1ac1ac0067242694)
+    #1 mk_utils_worker_spawn /usr/local/google/home/yiyu/src/fluent-bit/lib/monkey/mk_core/mk_utils.c:284 (flb-rt-out_stackdriver+0xc191b8) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #2 flb_worker_create /usr/local/google/home/yiyu/src/fluent-bit/src/flb_worker.c:96 (flb-rt-out_stackdriver+0xede71) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #3 flb_tp_thread_start /usr/local/google/home/yiyu/src/fluent-bit/src/flb_thread_pool.c:123 (flb-rt-out_stackdriver+0xf1fed) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #4 flb_tp_thread_start_all /usr/local/google/home/yiyu/src/fluent-bit/src/flb_thread_pool.c:170 (flb-rt-out_stackdriver+0xf211b) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #5 flb_output_thread_pool_start /usr/local/google/home/yiyu/src/fluent-bit/src/flb_output_thread.c:651 (flb-rt-out_stackdriver+0xbd2b5) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #6 flb_output_enable_multi_threading /usr/local/google/home/yiyu/src/fluent-bit/src/flb_output.c:1161 (flb-rt-out_stackdriver+0xb5b56) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #7 flb_output_init_all /usr/local/google/home/yiyu/src/fluent-bit/src/flb_output.c:1703 (flb-rt-out_stackdriver+0xb6d66) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #8 flb_engine_start /usr/local/google/home/yiyu/src/fluent-bit/src/flb_engine.c:1023 (flb-rt-out_stackdriver+0xd545d) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #9 flb_lib_worker /usr/local/google/home/yiyu/src/fluent-bit/src/flb_lib.c:909 (flb-rt-out_stackdriver+0x8c4a9) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+
+  Thread T4 'flb-out-stackdr' (tid=2719106, running) created by thread T1 at:
+    #0 pthread_create ../../../../src/libsanitizer/tsan/tsan_interceptors_posix.cpp:1041 (libtsan.so.2+0x573d0) (BuildId: fd145dff02b87fe539edddbf1ac1ac0067242694)
+    #1 mk_utils_worker_spawn /usr/local/google/home/yiyu/src/fluent-bit/lib/monkey/mk_core/mk_utils.c:284 (flb-rt-out_stackdriver+0xc191b8) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #2 flb_worker_create /usr/local/google/home/yiyu/src/fluent-bit/src/flb_worker.c:96 (flb-rt-out_stackdriver+0xede71) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #3 flb_tp_thread_start /usr/local/google/home/yiyu/src/fluent-bit/src/flb_thread_pool.c:123 (flb-rt-out_stackdriver+0xf1fed) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #4 flb_tp_thread_start_all /usr/local/google/home/yiyu/src/fluent-bit/src/flb_thread_pool.c:170 (flb-rt-out_stackdriver+0xf211b) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #5 flb_output_thread_pool_start /usr/local/google/home/yiyu/src/fluent-bit/src/flb_output_thread.c:651 (flb-rt-out_stackdriver+0xbd2b5) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #6 flb_output_enable_multi_threading /usr/local/google/home/yiyu/src/fluent-bit/src/flb_output.c:1161 (flb-rt-out_stackdriver+0xb5b56) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #7 flb_output_init_all /usr/local/google/home/yiyu/src/fluent-bit/src/flb_output.c:1703 (flb-rt-out_stackdriver+0xb6d66) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #8 flb_engine_start /usr/local/google/home/yiyu/src/fluent-bit/src/flb_engine.c:1023 (flb-rt-out_stackdriver+0xd545d) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #9 flb_lib_worker /usr/local/google/home/yiyu/src/fluent-bit/src/flb_lib.c:909 (flb-rt-out_stackdriver+0x8c4a9) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+
+  Thread T1 'flb-pipeline' (tid=2719103, running) created by main thread at:
+    #0 pthread_create ../../../../src/libsanitizer/tsan/tsan_interceptors_posix.cpp:1041 (libtsan.so.2+0x573d0) (BuildId: fd145dff02b87fe539edddbf1ac1ac0067242694)
+    #1 mk_utils_worker_spawn /usr/local/google/home/yiyu/src/fluent-bit/lib/monkey/mk_core/mk_utils.c:284 (flb-rt-out_stackdriver+0xc191b8) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #2 do_start /usr/local/google/home/yiyu/src/fluent-bit/src/flb_lib.c:945 (flb-rt-out_stackdriver+0x8a2c2) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #3 flb_start /usr/local/google/home/yiyu/src/fluent-bit/src/flb_lib.c:992 (flb-rt-out_stackdriver+0x8c43a) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #4 flb_test_resource_k8s_container_concurrency /usr/local/google/home/yiyu/src/fluent-bit/tests/runtime/out_stackdriver.c:3693 (flb-rt-out_stackdriver+0x7ee22) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #5 acutest_do_run_ /usr/local/google/home/yiyu/src/fluent-bit/tests/runtime/../lib/acutest/acutest.h:1034 (flb-rt-out_stackdriver+0x89960) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #6 acutest_run_ /usr/local/google/home/yiyu/src/fluent-bit/tests/runtime/../lib/acutest/acutest.h:1205 (flb-rt-out_stackdriver+0x73a22) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #7 main /usr/local/google/home/yiyu/src/fluent-bit/tests/runtime/../lib/acutest/acutest.h:1769 (flb-rt-out_stackdriver+0x73a22)
+
+SUMMARY: ThreadSanitizer: data race /usr/local/google/home/yiyu/src/fluent-bit/lib/cmetrics/src/cmt_map.c:88 in metric_hash_lookup
+==================
+==================
+WARNING: ThreadSanitizer: data race (pid=2719100)
+  Read of size 8 at 0x724400033240 by thread T3:
+    #0 metric_hash_lookup /usr/local/google/home/yiyu/src/fluent-bit/lib/cmetrics/src/cmt_map.c:90 (flb-rt-out_stackdriver+0x3ede11) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #1 cmt_map_metric_get /usr/local/google/home/yiyu/src/fluent-bit/lib/cmetrics/src/cmt_map.c:228 (flb-rt-out_stackdriver+0x3ede11)
+    #2 cmt_counter_inc /usr/local/google/home/yiyu/src/fluent-bit/lib/cmetrics/src/cmt_counter.c:106 (flb-rt-out_stackdriver+0x3e8e10) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #3 cb_stackdriver_flush /usr/local/google/home/yiyu/src/fluent-bit/plugins/out_stackdriver/stackdriver.c:3045 (flb-rt-out_stackdriver+0x2de0f9) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #4 output_params_set /usr/local/google/home/yiyu/src/fluent-bit/include/fluent-bit/flb_output.h:655 (flb-rt-out_stackdriver+0xb97b6) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #5 flb_output_flush_create /usr/local/google/home/yiyu/src/fluent-bit/include/fluent-bit/flb_output.h:1207 (flb-rt-out_stackdriver+0xb97b6)
+    #6 output_thread /usr/local/google/home/yiyu/src/fluent-bit/src/flb_output_thread.c:307 (flb-rt-out_stackdriver+0xb97b6)
+    #7 flb_net_tcp_connect /usr/local/google/home/yiyu/src/fluent-bit/src/flb_network.c:1361 (flb-rt-out_stackdriver+0xce01b) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #8 flb_io_net_connect /usr/local/google/home/yiyu/src/fluent-bit/src/flb_io.c:129 (flb-rt-out_stackdriver+0x13e0e0) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #9 create_conn /usr/local/google/home/yiyu/src/fluent-bit/src/flb_upstream.c:629 (flb-rt-out_stackdriver+0xe6dd2) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #10 flb_upstream_conn_get /usr/local/google/home/yiyu/src/fluent-bit/src/flb_upstream.c:833 (flb-rt-out_stackdriver+0xe6dd2)
+    #11 cb_stackdriver_flush /usr/local/google/home/yiyu/src/fluent-bit/plugins/out_stackdriver/stackdriver.c:3023 (flb-rt-out_stackdriver+0x2dd6ed) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #12 output_pre_cb_flush /usr/local/google/home/yiyu/src/fluent-bit/include/fluent-bit/flb_output.h:719 (flb-rt-out_stackdriver+0xb8065) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #13 co_init /usr/local/google/home/yiyu/src/fluent-bit/lib/monkey/deps/flb_libco/amd64.c:117 (flb-rt-out_stackdriver+0xc1ba46) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #14 output_params_set /usr/local/google/home/yiyu/src/fluent-bit/include/fluent-bit/flb_output.h:655 (flb-rt-out_stackdriver+0xb97b6) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #15 flb_output_flush_create /usr/local/google/home/yiyu/src/fluent-bit/include/fluent-bit/flb_output.h:1207 (flb-rt-out_stackdriver+0xb97b6)
+    #16 output_thread /usr/local/google/home/yiyu/src/fluent-bit/src/flb_output_thread.c:307 (flb-rt-out_stackdriver+0xb97b6)
+    #17 flb_net_tcp_connect /usr/local/google/home/yiyu/src/fluent-bit/src/flb_network.c:1361 (flb-rt-out_stackdriver+0xce01b) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #18 flb_io_net_connect /usr/local/google/home/yiyu/src/fluent-bit/src/flb_io.c:129 (flb-rt-out_stackdriver+0x13e0e0) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #19 create_conn /usr/local/google/home/yiyu/src/fluent-bit/src/flb_upstream.c:629 (flb-rt-out_stackdriver+0xe6dd2) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #20 flb_upstream_conn_get /usr/local/google/home/yiyu/src/fluent-bit/src/flb_upstream.c:833 (flb-rt-out_stackdriver+0xe6dd2)
+    #21 cb_stackdriver_flush /usr/local/google/home/yiyu/src/fluent-bit/plugins/out_stackdriver/stackdriver.c:3023 (flb-rt-out_stackdriver+0x2dd6ed) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #22 output_pre_cb_flush /usr/local/google/home/yiyu/src/fluent-bit/include/fluent-bit/flb_output.h:719 (flb-rt-out_stackdriver+0xb8065) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #23 co_init /usr/local/google/home/yiyu/src/fluent-bit/lib/monkey/deps/flb_libco/amd64.c:117 (flb-rt-out_stackdriver+0xc1ba46) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #24 output_params_set /usr/local/google/home/yiyu/src/fluent-bit/include/fluent-bit/flb_output.h:655 (flb-rt-out_stackdriver+0xb97b6) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #25 flb_output_flush_create /usr/local/google/home/yiyu/src/fluent-bit/include/fluent-bit/flb_output.h:1207 (flb-rt-out_stackdriver+0xb97b6)
+    #26 output_thread /usr/local/google/home/yiyu/src/fluent-bit/src/flb_output_thread.c:307 (flb-rt-out_stackdriver+0xb97b6)
+    #27 step_callback /usr/local/google/home/yiyu/src/fluent-bit/src/flb_worker.c:43 (flb-rt-out_stackdriver+0xedce8) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+
+  Previous write of size 8 at 0x724400033240 by thread T4:
+    #0 map_metric_create /usr/local/google/home/yiyu/src/fluent-bit/lib/cmetrics/src/cmt_map.c:113 (flb-rt-out_stackdriver+0x3ee305) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #1 cmt_map_metric_get /usr/local/google/home/yiyu/src/fluent-bit/lib/cmetrics/src/cmt_map.c:243 (flb-rt-out_stackdriver+0x3ee305)
+    #2 cmt_counter_inc /usr/local/google/home/yiyu/src/fluent-bit/lib/cmetrics/src/cmt_counter.c:106 (flb-rt-out_stackdriver+0x3e8e10) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #3 cb_stackdriver_flush /usr/local/google/home/yiyu/src/fluent-bit/plugins/out_stackdriver/stackdriver.c:3045 (flb-rt-out_stackdriver+0x2de0f9) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #4 co_init /usr/local/google/home/yiyu/src/fluent-bit/lib/monkey/deps/flb_libco/amd64.c:117 (flb-rt-out_stackdriver+0xc1ba46) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #5 output_params_set /usr/local/google/home/yiyu/src/fluent-bit/include/fluent-bit/flb_output.h:655 (flb-rt-out_stackdriver+0xb97b6) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #6 flb_output_flush_create /usr/local/google/home/yiyu/src/fluent-bit/include/fluent-bit/flb_output.h:1207 (flb-rt-out_stackdriver+0xb97b6)
+    #7 output_thread /usr/local/google/home/yiyu/src/fluent-bit/src/flb_output_thread.c:307 (flb-rt-out_stackdriver+0xb97b6)
+    #8 flb_net_tcp_connect /usr/local/google/home/yiyu/src/fluent-bit/src/flb_network.c:1361 (flb-rt-out_stackdriver+0xce01b) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #9 flb_io_net_connect /usr/local/google/home/yiyu/src/fluent-bit/src/flb_io.c:129 (flb-rt-out_stackdriver+0x13e0e0) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #10 create_conn /usr/local/google/home/yiyu/src/fluent-bit/src/flb_upstream.c:629 (flb-rt-out_stackdriver+0xe6dd2) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #11 flb_upstream_conn_get /usr/local/google/home/yiyu/src/fluent-bit/src/flb_upstream.c:833 (flb-rt-out_stackdriver+0xe6dd2)
+    #12 cb_stackdriver_flush /usr/local/google/home/yiyu/src/fluent-bit/plugins/out_stackdriver/stackdriver.c:3023 (flb-rt-out_stackdriver+0x2dd6ed) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #13 output_pre_cb_flush /usr/local/google/home/yiyu/src/fluent-bit/include/fluent-bit/flb_output.h:719 (flb-rt-out_stackdriver+0xb8065) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #14 co_init /usr/local/google/home/yiyu/src/fluent-bit/lib/monkey/deps/flb_libco/amd64.c:117 (flb-rt-out_stackdriver+0xc1ba46) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #15 output_params_set /usr/local/google/home/yiyu/src/fluent-bit/include/fluent-bit/flb_output.h:655 (flb-rt-out_stackdriver+0xb97b6) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #16 flb_output_flush_create /usr/local/google/home/yiyu/src/fluent-bit/include/fluent-bit/flb_output.h:1207 (flb-rt-out_stackdriver+0xb97b6)
+    #17 output_thread /usr/local/google/home/yiyu/src/fluent-bit/src/flb_output_thread.c:307 (flb-rt-out_stackdriver+0xb97b6)
+    #18 step_callback /usr/local/google/home/yiyu/src/fluent-bit/src/flb_worker.c:43 (flb-rt-out_stackdriver+0xedce8) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+
+  Location is heap block of size 264 at 0x724400033180 allocated by thread T4:
+    #0 calloc ../../../../src/libsanitizer/tsan/tsan_interceptors_posix.cpp:698 (libtsan.so.2+0x8282f) (BuildId: fd145dff02b87fe539edddbf1ac1ac0067242694)
+    #1 map_metric_create /usr/local/google/home/yiyu/src/fluent-bit/lib/cmetrics/src/cmt_map.c:106 (flb-rt-out_stackdriver+0x3ee2ac) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #2 cmt_map_metric_get /usr/local/google/home/yiyu/src/fluent-bit/lib/cmetrics/src/cmt_map.c:243 (flb-rt-out_stackdriver+0x3ee2ac)
+    #3 cmt_counter_inc /usr/local/google/home/yiyu/src/fluent-bit/lib/cmetrics/src/cmt_counter.c:106 (flb-rt-out_stackdriver+0x3e8e10) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #4 cb_stackdriver_flush /usr/local/google/home/yiyu/src/fluent-bit/plugins/out_stackdriver/stackdriver.c:3045 (flb-rt-out_stackdriver+0x2de0f9) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #5 co_init /usr/local/google/home/yiyu/src/fluent-bit/lib/monkey/deps/flb_libco/amd64.c:117 (flb-rt-out_stackdriver+0xc1ba46) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #6 output_params_set /usr/local/google/home/yiyu/src/fluent-bit/include/fluent-bit/flb_output.h:655 (flb-rt-out_stackdriver+0xb97b6) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #7 flb_output_flush_create /usr/local/google/home/yiyu/src/fluent-bit/include/fluent-bit/flb_output.h:1207 (flb-rt-out_stackdriver+0xb97b6)
+    #8 output_thread /usr/local/google/home/yiyu/src/fluent-bit/src/flb_output_thread.c:307 (flb-rt-out_stackdriver+0xb97b6)
+    #9 flb_net_tcp_connect /usr/local/google/home/yiyu/src/fluent-bit/src/flb_network.c:1361 (flb-rt-out_stackdriver+0xce01b) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #10 flb_io_net_connect /usr/local/google/home/yiyu/src/fluent-bit/src/flb_io.c:129 (flb-rt-out_stackdriver+0x13e0e0) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #11 create_conn /usr/local/google/home/yiyu/src/fluent-bit/src/flb_upstream.c:629 (flb-rt-out_stackdriver+0xe6dd2) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #12 flb_upstream_conn_get /usr/local/google/home/yiyu/src/fluent-bit/src/flb_upstream.c:833 (flb-rt-out_stackdriver+0xe6dd2)
+    #13 cb_stackdriver_flush /usr/local/google/home/yiyu/src/fluent-bit/plugins/out_stackdriver/stackdriver.c:3023 (flb-rt-out_stackdriver+0x2dd6ed) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #14 output_pre_cb_flush /usr/local/google/home/yiyu/src/fluent-bit/include/fluent-bit/flb_output.h:719 (flb-rt-out_stackdriver+0xb8065) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #15 co_init /usr/local/google/home/yiyu/src/fluent-bit/lib/monkey/deps/flb_libco/amd64.c:117 (flb-rt-out_stackdriver+0xc1ba46) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #16 output_params_set /usr/local/google/home/yiyu/src/fluent-bit/include/fluent-bit/flb_output.h:655 (flb-rt-out_stackdriver+0xb97b6) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #17 flb_output_flush_create /usr/local/google/home/yiyu/src/fluent-bit/include/fluent-bit/flb_output.h:1207 (flb-rt-out_stackdriver+0xb97b6)
+    #18 output_thread /usr/local/google/home/yiyu/src/fluent-bit/src/flb_output_thread.c:307 (flb-rt-out_stackdriver+0xb97b6)
+    #19 step_callback /usr/local/google/home/yiyu/src/fluent-bit/src/flb_worker.c:43 (flb-rt-out_stackdriver+0xedce8) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+
+  Thread T3 'flb-out-stackdr' (tid=2719105, running) created by thread T1 at:
+    #0 pthread_create ../../../../src/libsanitizer/tsan/tsan_interceptors_posix.cpp:1041 (libtsan.so.2+0x573d0) (BuildId: fd145dff02b87fe539edddbf1ac1ac0067242694)
+    #1 mk_utils_worker_spawn /usr/local/google/home/yiyu/src/fluent-bit/lib/monkey/mk_core/mk_utils.c:284 (flb-rt-out_stackdriver+0xc191b8) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #2 flb_worker_create /usr/local/google/home/yiyu/src/fluent-bit/src/flb_worker.c:96 (flb-rt-out_stackdriver+0xede71) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #3 flb_tp_thread_start /usr/local/google/home/yiyu/src/fluent-bit/src/flb_thread_pool.c:123 (flb-rt-out_stackdriver+0xf1fed) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #4 flb_tp_thread_start_all /usr/local/google/home/yiyu/src/fluent-bit/src/flb_thread_pool.c:170 (flb-rt-out_stackdriver+0xf211b) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #5 flb_output_thread_pool_start /usr/local/google/home/yiyu/src/fluent-bit/src/flb_output_thread.c:651 (flb-rt-out_stackdriver+0xbd2b5) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #6 flb_output_enable_multi_threading /usr/local/google/home/yiyu/src/fluent-bit/src/flb_output.c:1161 (flb-rt-out_stackdriver+0xb5b56) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #7 flb_output_init_all /usr/local/google/home/yiyu/src/fluent-bit/src/flb_output.c:1703 (flb-rt-out_stackdriver+0xb6d66) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #8 flb_engine_start /usr/local/google/home/yiyu/src/fluent-bit/src/flb_engine.c:1023 (flb-rt-out_stackdriver+0xd545d) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #9 flb_lib_worker /usr/local/google/home/yiyu/src/fluent-bit/src/flb_lib.c:909 (flb-rt-out_stackdriver+0x8c4a9) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+
+  Thread T4 'flb-out-stackdr' (tid=2719106, running) created by thread T1 at:
+    #0 pthread_create ../../../../src/libsanitizer/tsan/tsan_interceptors_posix.cpp:1041 (libtsan.so.2+0x573d0) (BuildId: fd145dff02b87fe539edddbf1ac1ac0067242694)
+    #1 mk_utils_worker_spawn /usr/local/google/home/yiyu/src/fluent-bit/lib/monkey/mk_core/mk_utils.c:284 (flb-rt-out_stackdriver+0xc191b8) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #2 flb_worker_create /usr/local/google/home/yiyu/src/fluent-bit/src/flb_worker.c:96 (flb-rt-out_stackdriver+0xede71) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #3 flb_tp_thread_start /usr/local/google/home/yiyu/src/fluent-bit/src/flb_thread_pool.c:123 (flb-rt-out_stackdriver+0xf1fed) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #4 flb_tp_thread_start_all /usr/local/google/home/yiyu/src/fluent-bit/src/flb_thread_pool.c:170 (flb-rt-out_stackdriver+0xf211b) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #5 flb_output_thread_pool_start /usr/local/google/home/yiyu/src/fluent-bit/src/flb_output_thread.c:651 (flb-rt-out_stackdriver+0xbd2b5) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #6 flb_output_enable_multi_threading /usr/local/google/home/yiyu/src/fluent-bit/src/flb_output.c:1161 (flb-rt-out_stackdriver+0xb5b56) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #7 flb_output_init_all /usr/local/google/home/yiyu/src/fluent-bit/src/flb_output.c:1703 (flb-rt-out_stackdriver+0xb6d66) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #8 flb_engine_start /usr/local/google/home/yiyu/src/fluent-bit/src/flb_engine.c:1023 (flb-rt-out_stackdriver+0xd545d) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #9 flb_lib_worker /usr/local/google/home/yiyu/src/fluent-bit/src/flb_lib.c:909 (flb-rt-out_stackdriver+0x8c4a9) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+
+SUMMARY: ThreadSanitizer: data race /usr/local/google/home/yiyu/src/fluent-bit/lib/cmetrics/src/cmt_map.c:90 in metric_hash_lookup
+==================
+[2026/06/29 15:55:20.686] [error] [output:stackdriver:stackdriver.0] error creating RSA context
+[2026/06/29 15:55:20.686] [error] [output:stackdriver:stackdriver.0] JWT signature generation failed
+[2026/06/29 15:55:20.686] [error] [output:stackdriver:stackdriver.0] cannot retrieve oauth2 token
+==================
+WARNING: ThreadSanitizer: data race (pid=2719100)
+  Write of size 8 at 0x720c0000e830 by thread T4:
+    #0 flb_metrics_sum /usr/local/google/home/yiyu/src/fluent-bit/src/flb_metrics.c:184 (flb-rt-out_stackdriver+0x125abd) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #1 cb_stackdriver_flush /usr/local/google/home/yiyu/src/fluent-bit/plugins/out_stackdriver/stackdriver.c:3049 (flb-rt-out_stackdriver+0x2de12b) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #2 flb_io_net_connect /usr/local/google/home/yiyu/src/fluent-bit/src/flb_io.c:129 (flb-rt-out_stackdriver+0x13e0e0) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #3 create_conn /usr/local/google/home/yiyu/src/fluent-bit/src/flb_upstream.c:629 (flb-rt-out_stackdriver+0xe6dd2) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #4 flb_upstream_conn_get /usr/local/google/home/yiyu/src/fluent-bit/src/flb_upstream.c:833 (flb-rt-out_stackdriver+0xe6dd2)
+    #5 cb_stackdriver_flush /usr/local/google/home/yiyu/src/fluent-bit/plugins/out_stackdriver/stackdriver.c:3023 (flb-rt-out_stackdriver+0x2dd6ed) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #6 output_pre_cb_flush /usr/local/google/home/yiyu/src/fluent-bit/include/fluent-bit/flb_output.h:719 (flb-rt-out_stackdriver+0xb8065) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #7 co_init /usr/local/google/home/yiyu/src/fluent-bit/lib/monkey/deps/flb_libco/amd64.c:117 (flb-rt-out_stackdriver+0xc1ba46) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #8 output_params_set /usr/local/google/home/yiyu/src/fluent-bit/include/fluent-bit/flb_output.h:655 (flb-rt-out_stackdriver+0xb97b6) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #9 flb_output_flush_create /usr/local/google/home/yiyu/src/fluent-bit/include/fluent-bit/flb_output.h:1207 (flb-rt-out_stackdriver+0xb97b6)
+    #10 output_thread /usr/local/google/home/yiyu/src/fluent-bit/src/flb_output_thread.c:307 (flb-rt-out_stackdriver+0xb97b6)
+    #11 step_callback /usr/local/google/home/yiyu/src/fluent-bit/src/flb_worker.c:43 (flb-rt-out_stackdriver+0xedce8) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+
+  Previous write of size 8 at 0x720c0000e830 by thread T3:
+    #0 flb_metrics_sum /usr/local/google/home/yiyu/src/fluent-bit/src/flb_metrics.c:184 (flb-rt-out_stackdriver+0x125abd) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #1 cb_stackdriver_flush /usr/local/google/home/yiyu/src/fluent-bit/plugins/out_stackdriver/stackdriver.c:3049 (flb-rt-out_stackdriver+0x2de12b) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #2 output_params_set /usr/local/google/home/yiyu/src/fluent-bit/include/fluent-bit/flb_output.h:655 (flb-rt-out_stackdriver+0xb97b6) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #3 flb_output_flush_create /usr/local/google/home/yiyu/src/fluent-bit/include/fluent-bit/flb_output.h:1207 (flb-rt-out_stackdriver+0xb97b6)
+    #4 output_thread /usr/local/google/home/yiyu/src/fluent-bit/src/flb_output_thread.c:307 (flb-rt-out_stackdriver+0xb97b6)
+    #5 flb_net_tcp_connect /usr/local/google/home/yiyu/src/fluent-bit/src/flb_network.c:1361 (flb-rt-out_stackdriver+0xce01b) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #6 flb_io_net_connect /usr/local/google/home/yiyu/src/fluent-bit/src/flb_io.c:129 (flb-rt-out_stackdriver+0x13e0e0) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #7 create_conn /usr/local/google/home/yiyu/src/fluent-bit/src/flb_upstream.c:629 (flb-rt-out_stackdriver+0xe6dd2) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #8 flb_upstream_conn_get /usr/local/google/home/yiyu/src/fluent-bit/src/flb_upstream.c:833 (flb-rt-out_stackdriver+0xe6dd2)
+    #9 cb_stackdriver_flush /usr/local/google/home/yiyu/src/fluent-bit/plugins/out_stackdriver/stackdriver.c:3023 (flb-rt-out_stackdriver+0x2dd6ed) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #10 output_pre_cb_flush /usr/local/google/home/yiyu/src/fluent-bit/include/fluent-bit/flb_output.h:719 (flb-rt-out_stackdriver+0xb8065) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #11 co_init /usr/local/google/home/yiyu/src/fluent-bit/lib/monkey/deps/flb_libco/amd64.c:117 (flb-rt-out_stackdriver+0xc1ba46) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #12 output_params_set /usr/local/google/home/yiyu/src/fluent-bit/include/fluent-bit/flb_output.h:655 (flb-rt-out_stackdriver+0xb97b6) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #13 flb_output_flush_create /usr/local/google/home/yiyu/src/fluent-bit/include/fluent-bit/flb_output.h:1207 (flb-rt-out_stackdriver+0xb97b6)
+    #14 output_thread /usr/local/google/home/yiyu/src/fluent-bit/src/flb_output_thread.c:307 (flb-rt-out_stackdriver+0xb97b6)
+    #15 flb_net_tcp_connect /usr/local/google/home/yiyu/src/fluent-bit/src/flb_network.c:1361 (flb-rt-out_stackdriver+0xce01b) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #16 flb_io_net_connect /usr/local/google/home/yiyu/src/fluent-bit/src/flb_io.c:129 (flb-rt-out_stackdriver+0x13e0e0) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #17 create_conn /usr/local/google/home/yiyu/src/fluent-bit/src/flb_upstream.c:629 (flb-rt-out_stackdriver+0xe6dd2) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #18 flb_upstream_conn_get /usr/local/google/home/yiyu/src/fluent-bit/src/flb_upstream.c:833 (flb-rt-out_stackdriver+0xe6dd2)
+    #19 cb_stackdriver_flush /usr/local/google/home/yiyu/src/fluent-bit/plugins/out_stackdriver/stackdriver.c:3023 (flb-rt-out_stackdriver+0x2dd6ed) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #20 output_pre_cb_flush /usr/local/google/home/yiyu/src/fluent-bit/include/fluent-bit/flb_output.h:719 (flb-rt-out_stackdriver+0xb8065) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #21 co_init /usr/local/google/home/yiyu/src/fluent-bit/lib/monkey/deps/flb_libco/amd64.c:117 (flb-rt-out_stackdriver+0xc1ba46) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #22 output_params_set /usr/local/google/home/yiyu/src/fluent-bit/include/fluent-bit/flb_output.h:655 (flb-rt-out_stackdriver+0xb97b6) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #23 flb_output_flush_create /usr/local/google/home/yiyu/src/fluent-bit/include/fluent-bit/flb_output.h:1207 (flb-rt-out_stackdriver+0xb97b6)
+    #24 output_thread /usr/local/google/home/yiyu/src/fluent-bit/src/flb_output_thread.c:307 (flb-rt-out_stackdriver+0xb97b6)
+    #25 step_callback /usr/local/google/home/yiyu/src/fluent-bit/src/flb_worker.c:43 (flb-rt-out_stackdriver+0xedce8) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+
+  Location is heap block of size 40 at 0x720c0000e820 allocated by thread T1:
+    #0 malloc ../../../../src/libsanitizer/tsan/tsan_interceptors_posix.cpp:676 (libtsan.so.2+0x82cec) (BuildId: fd145dff02b87fe539edddbf1ac1ac0067242694)
+    #1 flb_malloc /usr/local/google/home/yiyu/src/fluent-bit/include/fluent-bit/flb_mem.h:80 (flb-rt-out_stackdriver+0x1257c9) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #2 flb_metrics_add /usr/local/google/home/yiyu/src/fluent-bit/src/flb_metrics.c:132 (flb-rt-out_stackdriver+0x1257c9)
+    #3 flb_stackdriver_conf_create /usr/local/google/home/yiyu/src/fluent-bit/plugins/out_stackdriver/stackdriver_conf.c:651 (flb-rt-out_stackdriver+0x2e5baf) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #4 cb_stackdriver_init /usr/local/google/home/yiyu/src/fluent-bit/plugins/out_stackdriver/stackdriver.c:1327 (flb-rt-out_stackdriver+0x2df4a8) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #5 flb_output_init_all /usr/local/google/home/yiyu/src/fluent-bit/src/flb_output.c:1692 (flb-rt-out_stackdriver+0xb6d23) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #6 flb_engine_start /usr/local/google/home/yiyu/src/fluent-bit/src/flb_engine.c:1023 (flb-rt-out_stackdriver+0xd545d) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #7 flb_lib_worker /usr/local/google/home/yiyu/src/fluent-bit/src/flb_lib.c:909 (flb-rt-out_stackdriver+0x8c4a9) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+
+  Thread T4 'flb-out-stackdr' (tid=2719106, running) created by thread T1 at:
+    #0 pthread_create ../../../../src/libsanitizer/tsan/tsan_interceptors_posix.cpp:1041 (libtsan.so.2+0x573d0) (BuildId: fd145dff02b87fe539edddbf1ac1ac0067242694)
+    #1 mk_utils_worker_spawn /usr/local/google/home/yiyu/src/fluent-bit/lib/monkey/mk_core/mk_utils.c:284 (flb-rt-out_stackdriver+0xc191b8) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #2 flb_worker_create /usr/local/google/home/yiyu/src/fluent-bit/src/flb_worker.c:96 (flb-rt-out_stackdriver+0xede71) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #3 flb_tp_thread_start /usr/local/google/home/yiyu/src/fluent-bit/src/flb_thread_pool.c:123 (flb-rt-out_stackdriver+0xf1fed) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #4 flb_tp_thread_start_all /usr/local/google/home/yiyu/src/fluent-bit/src/flb_thread_pool.c:170 (flb-rt-out_stackdriver+0xf211b) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #5 flb_output_thread_pool_start /usr/local/google/home/yiyu/src/fluent-bit/src/flb_output_thread.c:651 (flb-rt-out_stackdriver+0xbd2b5) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #6 flb_output_enable_multi_threading /usr/local/google/home/yiyu/src/fluent-bit/src/flb_output.c:1161 (flb-rt-out_stackdriver+0xb5b56) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #7 flb_output_init_all /usr/local/google/home/yiyu/src/fluent-bit/src/flb_output.c:1703 (flb-rt-out_stackdriver+0xb6d66) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #8 flb_engine_start /usr/local/google/home/yiyu/src/fluent-bit/src/flb_engine.c:1023 (flb-rt-out_stackdriver+0xd545d) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #9 flb_lib_worker /usr/local/google/home/yiyu/src/fluent-bit/src/flb_lib.c:909 (flb-rt-out_stackdriver+0x8c4a9) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+
+  Thread T3 'flb-out-stackdr' (tid=2719105, running) created by thread T1 at:
+    #0 pthread_create ../../../../src/libsanitizer/tsan/tsan_interceptors_posix.cpp:1041 (libtsan.so.2+0x573d0) (BuildId: fd145dff02b87fe539edddbf1ac1ac0067242694)
+    #1 mk_utils_worker_spawn /usr/local/google/home/yiyu/src/fluent-bit/lib/monkey/mk_core/mk_utils.c:284 (flb-rt-out_stackdriver+0xc191b8) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #2 flb_worker_create /usr/local/google/home/yiyu/src/fluent-bit/src/flb_worker.c:96 (flb-rt-out_stackdriver+0xede71) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #3 flb_tp_thread_start /usr/local/google/home/yiyu/src/fluent-bit/src/flb_thread_pool.c:123 (flb-rt-out_stackdriver+0xf1fed) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #4 flb_tp_thread_start_all /usr/local/google/home/yiyu/src/fluent-bit/src/flb_thread_pool.c:170 (flb-rt-out_stackdriver+0xf211b) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #5 flb_output_thread_pool_start /usr/local/google/home/yiyu/src/fluent-bit/src/flb_output_thread.c:651 (flb-rt-out_stackdriver+0xbd2b5) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #6 flb_output_enable_multi_threading /usr/local/google/home/yiyu/src/fluent-bit/src/flb_output.c:1161 (flb-rt-out_stackdriver+0xb5b56) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #7 flb_output_init_all /usr/local/google/home/yiyu/src/fluent-bit/src/flb_output.c:1703 (flb-rt-out_stackdriver+0xb6d66) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #8 flb_engine_start /usr/local/google/home/yiyu/src/fluent-bit/src/flb_engine.c:1023 (flb-rt-out_stackdriver+0xd545d) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #9 flb_lib_worker /usr/local/google/home/yiyu/src/fluent-bit/src/flb_lib.c:909 (flb-rt-out_stackdriver+0x8c4a9) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+
+  Thread T1 'flb-pipeline' (tid=2719103, running) created by main thread at:
+    #0 pthread_create ../../../../src/libsanitizer/tsan/tsan_interceptors_posix.cpp:1041 (libtsan.so.2+0x573d0) (BuildId: fd145dff02b87fe539edddbf1ac1ac0067242694)
+    #1 mk_utils_worker_spawn /usr/local/google/home/yiyu/src/fluent-bit/lib/monkey/mk_core/mk_utils.c:284 (flb-rt-out_stackdriver+0xc191b8) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #2 do_start /usr/local/google/home/yiyu/src/fluent-bit/src/flb_lib.c:945 (flb-rt-out_stackdriver+0x8a2c2) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #3 flb_start /usr/local/google/home/yiyu/src/fluent-bit/src/flb_lib.c:992 (flb-rt-out_stackdriver+0x8c43a) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #4 flb_test_resource_k8s_container_concurrency /usr/local/google/home/yiyu/src/fluent-bit/tests/runtime/out_stackdriver.c:3693 (flb-rt-out_stackdriver+0x7ee22) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #5 acutest_do_run_ /usr/local/google/home/yiyu/src/fluent-bit/tests/runtime/../lib/acutest/acutest.h:1034 (flb-rt-out_stackdriver+0x89960) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #6 acutest_run_ /usr/local/google/home/yiyu/src/fluent-bit/tests/runtime/../lib/acutest/acutest.h:1205 (flb-rt-out_stackdriver+0x73a22) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #7 main /usr/local/google/home/yiyu/src/fluent-bit/tests/runtime/../lib/acutest/acutest.h:1769 (flb-rt-out_stackdriver+0x73a22)
+
+SUMMARY: ThreadSanitizer: data race /usr/local/google/home/yiyu/src/fluent-bit/src/flb_metrics.c:184 in flb_metrics_sum
+==================
+[2026/06/29 15:55:20.691] [ warn] [engine] failed to flush chunk '2719100-1782748519.644946222.flb', retry in 10 seconds: task_id=3, input=lib.3 > output=stackdriver.0 (out_id=0)
+[2026/06/29 15:55:20.691] [ warn] [engine] failed to flush chunk '2719100-1782748519.642093853.flb', retry in 6 seconds: task_id=1, input=lib.1 > output=stackdriver.0 (out_id=0)
+[2026/06/29 15:55:20.693] [error] [output:stackdriver:stackdriver.0] error creating RSA context
+[2026/06/29 15:55:20.693] [error] [output:stackdriver:stackdriver.0] JWT signature generation failed
+[2026/06/29 15:55:20.693] [error] [output:stackdriver:stackdriver.0] cannot retrieve oauth2 token
+[2026/06/29 15:55:20.694] [error] [output:stackdriver:stackdriver.0] error creating RSA context
+[2026/06/29 15:55:20.694] [error] [output:stackdriver:stackdriver.0] JWT signature generation failed
+[2026/06/29 15:55:20.694] [error] [output:stackdriver:stackdriver.0] cannot retrieve oauth2 token
+[2026/06/29 15:55:20.694] [ warn] [engine] failed to flush chunk '2719100-1782748519.641704573.flb', retry in 8 seconds: task_id=0, input=lib.0 > output=stackdriver.0 (out_id=0)
+[2026/06/29 15:55:20.694] [ warn] [engine] failed to flush chunk '2719100-1782748519.647799852.flb', retry in 6 seconds: task_id=4, input=lib.4 > output=stackdriver.0 (out_id=0)
+[2026/06/29 15:55:20.695] [ warn] [engine] failed to flush chunk '2719100-1782748519.642625093.flb', retry in 7 seconds: task_id=2, input=lib.2 > output=stackdriver.0 (out_id=0)
+[2026/06/29 15:55:23.654] [ warn] [engine] service will shutdown in max 1 seconds
+[2026/06/29 15:55:23.654] [ info] [engine] pausing all inputs..
+[2026/06/29 15:55:23.663] [error] [output:stackdriver:stackdriver.0] error creating RSA context
+[2026/06/29 15:55:23.663] [error] [output:stackdriver:stackdriver.0] JWT signature generation failed
+[2026/06/29 15:55:23.663] [error] [output:stackdriver:stackdriver.0] cannot retrieve oauth2 token
+[2026/06/29 15:55:23.664] [error] [output:stackdriver:stackdriver.0] error creating RSA context
+[2026/06/29 15:55:23.664] [error] [output:stackdriver:stackdriver.0] JWT signature generation failed
+[2026/06/29 15:55:23.664] [error] [output:stackdriver:stackdriver.0] cannot retrieve oauth2 token
+==================
+WARNING: ThreadSanitizer: data race (pid=2719100)
+  Write of size 8 at 0x720c0000e830 by thread T3:
+    #0 flb_metrics_sum /usr/local/google/home/yiyu/src/fluent-bit/src/flb_metrics.c:184 (flb-rt-out_stackdriver+0x125abd) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #1 cb_stackdriver_flush /usr/local/google/home/yiyu/src/fluent-bit/plugins/out_stackdriver/stackdriver.c:3049 (flb-rt-out_stackdriver+0x2de12b) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #2 output_pre_cb_flush /usr/local/google/home/yiyu/src/fluent-bit/include/fluent-bit/flb_output.h:719 (flb-rt-out_stackdriver+0xb8065) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #3 co_init /usr/local/google/home/yiyu/src/fluent-bit/lib/monkey/deps/flb_libco/amd64.c:117 (flb-rt-out_stackdriver+0xc1ba46) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #4 output_params_set /usr/local/google/home/yiyu/src/fluent-bit/include/fluent-bit/flb_output.h:655 (flb-rt-out_stackdriver+0xb97b6) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #5 flb_output_flush_create /usr/local/google/home/yiyu/src/fluent-bit/include/fluent-bit/flb_output.h:1207 (flb-rt-out_stackdriver+0xb97b6)
+    #6 output_thread /usr/local/google/home/yiyu/src/fluent-bit/src/flb_output_thread.c:307 (flb-rt-out_stackdriver+0xb97b6)
+    #7 co_init /usr/local/google/home/yiyu/src/fluent-bit/lib/monkey/deps/flb_libco/amd64.c:117 (flb-rt-out_stackdriver+0xc1ba46) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #8 output_params_set /usr/local/google/home/yiyu/src/fluent-bit/include/fluent-bit/flb_output.h:655 (flb-rt-out_stackdriver+0xb97b6) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #9 flb_output_flush_create /usr/local/google/home/yiyu/src/fluent-bit/include/fluent-bit/flb_output.h:1207 (flb-rt-out_stackdriver+0xb97b6)
+    #10 output_thread /usr/local/google/home/yiyu/src/fluent-bit/src/flb_output_thread.c:307 (flb-rt-out_stackdriver+0xb97b6)
+    #11 flb_net_tcp_connect /usr/local/google/home/yiyu/src/fluent-bit/src/flb_network.c:1361 (flb-rt-out_stackdriver+0xce01b) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #12 flb_io_net_connect /usr/local/google/home/yiyu/src/fluent-bit/src/flb_io.c:129 (flb-rt-out_stackdriver+0x13e0e0) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #13 create_conn /usr/local/google/home/yiyu/src/fluent-bit/src/flb_upstream.c:629 (flb-rt-out_stackdriver+0xe6dd2) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #14 flb_upstream_conn_get /usr/local/google/home/yiyu/src/fluent-bit/src/flb_upstream.c:833 (flb-rt-out_stackdriver+0xe6dd2)
+    #15 cb_stackdriver_flush /usr/local/google/home/yiyu/src/fluent-bit/plugins/out_stackdriver/stackdriver.c:3023 (flb-rt-out_stackdriver+0x2dd6ed) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #16 output_pre_cb_flush /usr/local/google/home/yiyu/src/fluent-bit/include/fluent-bit/flb_output.h:719 (flb-rt-out_stackdriver+0xb8065) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #17 co_init /usr/local/google/home/yiyu/src/fluent-bit/lib/monkey/deps/flb_libco/amd64.c:117 (flb-rt-out_stackdriver+0xc1ba46) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #18 output_params_set /usr/local/google/home/yiyu/src/fluent-bit/include/fluent-bit/flb_output.h:655 (flb-rt-out_stackdriver+0xb97b6) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #19 flb_output_flush_create /usr/local/google/home/yiyu/src/fluent-bit/include/fluent-bit/flb_output.h:1207 (flb-rt-out_stackdriver+0xb97b6)
+    #20 output_thread /usr/local/google/home/yiyu/src/fluent-bit/src/flb_output_thread.c:307 (flb-rt-out_stackdriver+0xb97b6)
+    #21 step_callback /usr/local/google/home/yiyu/src/fluent-bit/src/flb_worker.c:43 (flb-rt-out_stackdriver+0xedce8) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+
+  Previous write of size 8 at 0x720c0000e830 by thread T4:
+    #0 flb_metrics_sum /usr/local/google/home/yiyu/src/fluent-bit/src/flb_metrics.c:184 (flb-rt-out_stackdriver+0x125abd) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #1 cb_stackdriver_flush /usr/local/google/home/yiyu/src/fluent-bit/plugins/out_stackdriver/stackdriver.c:3049 (flb-rt-out_stackdriver+0x2de12b) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #2 output_pre_cb_flush /usr/local/google/home/yiyu/src/fluent-bit/include/fluent-bit/flb_output.h:719 (flb-rt-out_stackdriver+0xb8065) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #3 co_init /usr/local/google/home/yiyu/src/fluent-bit/lib/monkey/deps/flb_libco/amd64.c:117 (flb-rt-out_stackdriver+0xc1ba46) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #4 output_params_set /usr/local/google/home/yiyu/src/fluent-bit/include/fluent-bit/flb_output.h:655 (flb-rt-out_stackdriver+0xb97b6) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #5 flb_output_flush_create /usr/local/google/home/yiyu/src/fluent-bit/include/fluent-bit/flb_output.h:1207 (flb-rt-out_stackdriver+0xb97b6)
+    #6 output_thread /usr/local/google/home/yiyu/src/fluent-bit/src/flb_output_thread.c:307 (flb-rt-out_stackdriver+0xb97b6)
+    #7 flb_io_net_connect /usr/local/google/home/yiyu/src/fluent-bit/src/flb_io.c:129 (flb-rt-out_stackdriver+0x13e0e0) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #8 create_conn /usr/local/google/home/yiyu/src/fluent-bit/src/flb_upstream.c:629 (flb-rt-out_stackdriver+0xe6dd2) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #9 flb_upstream_conn_get /usr/local/google/home/yiyu/src/fluent-bit/src/flb_upstream.c:833 (flb-rt-out_stackdriver+0xe6dd2)
+    #10 cb_stackdriver_flush /usr/local/google/home/yiyu/src/fluent-bit/plugins/out_stackdriver/stackdriver.c:3023 (flb-rt-out_stackdriver+0x2dd6ed) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #11 output_pre_cb_flush /usr/local/google/home/yiyu/src/fluent-bit/include/fluent-bit/flb_output.h:719 (flb-rt-out_stackdriver+0xb8065) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #12 co_init /usr/local/google/home/yiyu/src/fluent-bit/lib/monkey/deps/flb_libco/amd64.c:117 (flb-rt-out_stackdriver+0xc1ba46) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #13 output_params_set /usr/local/google/home/yiyu/src/fluent-bit/include/fluent-bit/flb_output.h:655 (flb-rt-out_stackdriver+0xb97b6) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #14 flb_output_flush_create /usr/local/google/home/yiyu/src/fluent-bit/include/fluent-bit/flb_output.h:1207 (flb-rt-out_stackdriver+0xb97b6)
+    #15 output_thread /usr/local/google/home/yiyu/src/fluent-bit/src/flb_output_thread.c:307 (flb-rt-out_stackdriver+0xb97b6)
+    #16 step_callback /usr/local/google/home/yiyu/src/fluent-bit/src/flb_worker.c:43 (flb-rt-out_stackdriver+0xedce8) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+
+  Location is heap block of size 40 at 0x720c0000e820 allocated by thread T1:
+    #0 malloc ../../../../src/libsanitizer/tsan/tsan_interceptors_posix.cpp:676 (libtsan.so.2+0x82cec) (BuildId: fd145dff02b87fe539edddbf1ac1ac0067242694)
+    #1 flb_malloc /usr/local/google/home/yiyu/src/fluent-bit/include/fluent-bit/flb_mem.h:80 (flb-rt-out_stackdriver+0x1257c9) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #2 flb_metrics_add /usr/local/google/home/yiyu/src/fluent-bit/src/flb_metrics.c:132 (flb-rt-out_stackdriver+0x1257c9)
+    #3 flb_stackdriver_conf_create /usr/local/google/home/yiyu/src/fluent-bit/plugins/out_stackdriver/stackdriver_conf.c:651 (flb-rt-out_stackdriver+0x2e5baf) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #4 cb_stackdriver_init /usr/local/google/home/yiyu/src/fluent-bit/plugins/out_stackdriver/stackdriver.c:1327 (flb-rt-out_stackdriver+0x2df4a8) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #5 flb_output_init_all /usr/local/google/home/yiyu/src/fluent-bit/src/flb_output.c:1692 (flb-rt-out_stackdriver+0xb6d23) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #6 flb_engine_start /usr/local/google/home/yiyu/src/fluent-bit/src/flb_engine.c:1023 (flb-rt-out_stackdriver+0xd545d) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #7 flb_lib_worker /usr/local/google/home/yiyu/src/fluent-bit/src/flb_lib.c:909 (flb-rt-out_stackdriver+0x8c4a9) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+
+  Thread T3 'flb-out-stackdr' (tid=2719105, running) created by thread T1 at:
+    #0 pthread_create ../../../../src/libsanitizer/tsan/tsan_interceptors_posix.cpp:1041 (libtsan.so.2+0x573d0) (BuildId: fd145dff02b87fe539edddbf1ac1ac0067242694)
+    #1 mk_utils_worker_spawn /usr/local/google/home/yiyu/src/fluent-bit/lib/monkey/mk_core/mk_utils.c:284 (flb-rt-out_stackdriver+0xc191b8) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #2 flb_worker_create /usr/local/google/home/yiyu/src/fluent-bit/src/flb_worker.c:96 (flb-rt-out_stackdriver+0xede71) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #3 flb_tp_thread_start /usr/local/google/home/yiyu/src/fluent-bit/src/flb_thread_pool.c:123 (flb-rt-out_stackdriver+0xf1fed) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #4 flb_tp_thread_start_all /usr/local/google/home/yiyu/src/fluent-bit/src/flb_thread_pool.c:170 (flb-rt-out_stackdriver+0xf211b) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #5 flb_output_thread_pool_start /usr/local/google/home/yiyu/src/fluent-bit/src/flb_output_thread.c:651 (flb-rt-out_stackdriver+0xbd2b5) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #6 flb_output_enable_multi_threading /usr/local/google/home/yiyu/src/fluent-bit/src/flb_output.c:1161 (flb-rt-out_stackdriver+0xb5b56) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #7 flb_output_init_all /usr/local/google/home/yiyu/src/fluent-bit/src/flb_output.c:1703 (flb-rt-out_stackdriver+0xb6d66) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #8 flb_engine_start /usr/local/google/home/yiyu/src/fluent-bit/src/flb_engine.c:1023 (flb-rt-out_stackdriver+0xd545d) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #9 flb_lib_worker /usr/local/google/home/yiyu/src/fluent-bit/src/flb_lib.c:909 (flb-rt-out_stackdriver+0x8c4a9) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+
+  Thread T4 'flb-out-stackdr' (tid=2719106, running) created by thread T1 at:
+    #0 pthread_create ../../../../src/libsanitizer/tsan/tsan_interceptors_posix.cpp:1041 (libtsan.so.2+0x573d0) (BuildId: fd145dff02b87fe539edddbf1ac1ac0067242694)
+    #1 mk_utils_worker_spawn /usr/local/google/home/yiyu/src/fluent-bit/lib/monkey/mk_core/mk_utils.c:284 (flb-rt-out_stackdriver+0xc191b8) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #2 flb_worker_create /usr/local/google/home/yiyu/src/fluent-bit/src/flb_worker.c:96 (flb-rt-out_stackdriver+0xede71) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #3 flb_tp_thread_start /usr/local/google/home/yiyu/src/fluent-bit/src/flb_thread_pool.c:123 (flb-rt-out_stackdriver+0xf1fed) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #4 flb_tp_thread_start_all /usr/local/google/home/yiyu/src/fluent-bit/src/flb_thread_pool.c:170 (flb-rt-out_stackdriver+0xf211b) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #5 flb_output_thread_pool_start /usr/local/google/home/yiyu/src/fluent-bit/src/flb_output_thread.c:651 (flb-rt-out_stackdriver+0xbd2b5) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #6 flb_output_enable_multi_threading /usr/local/google/home/yiyu/src/fluent-bit/src/flb_output.c:1161 (flb-rt-out_stackdriver+0xb5b56) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #7 flb_output_init_all /usr/local/google/home/yiyu/src/fluent-bit/src/flb_output.c:1703 (flb-rt-out_stackdriver+0xb6d66) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #8 flb_engine_start /usr/local/google/home/yiyu/src/fluent-bit/src/flb_engine.c:1023 (flb-rt-out_stackdriver+0xd545d) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #9 flb_lib_worker /usr/local/google/home/yiyu/src/fluent-bit/src/flb_lib.c:909 (flb-rt-out_stackdriver+0x8c4a9) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+
+  Thread T1 'flb-pipeline' (tid=2719103, running) created by main thread at:
+    #0 pthread_create ../../../../src/libsanitizer/tsan/tsan_interceptors_posix.cpp:1041 (libtsan.so.2+0x573d0) (BuildId: fd145dff02b87fe539edddbf1ac1ac0067242694)
+    #1 mk_utils_worker_spawn /usr/local/google/home/yiyu/src/fluent-bit/lib/monkey/mk_core/mk_utils.c:284 (flb-rt-out_stackdriver+0xc191b8) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #2 do_start /usr/local/google/home/yiyu/src/fluent-bit/src/flb_lib.c:945 (flb-rt-out_stackdriver+0x8a2c2) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #3 flb_start /usr/local/google/home/yiyu/src/fluent-bit/src/flb_lib.c:992 (flb-rt-out_stackdriver+0x8c43a) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #4 flb_test_resource_k8s_container_concurrency /usr/local/google/home/yiyu/src/fluent-bit/tests/runtime/out_stackdriver.c:3693 (flb-rt-out_stackdriver+0x7ee22) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #5 acutest_do_run_ /usr/local/google/home/yiyu/src/fluent-bit/tests/runtime/../lib/acutest/acutest.h:1034 (flb-rt-out_stackdriver+0x89960) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #6 acutest_run_ /usr/local/google/home/yiyu/src/fluent-bit/tests/runtime/../lib/acutest/acutest.h:1205 (flb-rt-out_stackdriver+0x73a22) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #7 main /usr/local/google/home/yiyu/src/fluent-bit/tests/runtime/../lib/acutest/acutest.h:1769 (flb-rt-out_stackdriver+0x73a22)
+
+SUMMARY: ThreadSanitizer: data race /usr/local/google/home/yiyu/src/fluent-bit/src/flb_metrics.c:184 in flb_metrics_sum
+==================
+[2026/06/29 15:55:23.677] [error] [output:stackdriver:stackdriver.0] error creating RSA context
+[2026/06/29 15:55:23.677] [error] [output:stackdriver:stackdriver.0] JWT signature generation failed
+[2026/06/29 15:55:23.677] [error] [output:stackdriver:stackdriver.0] cannot retrieve oauth2 token
+[2026/06/29 15:55:23.677] [error] [output:stackdriver:stackdriver.0] error creating RSA context
+[2026/06/29 15:55:23.677] [error] [output:stackdriver:stackdriver.0] JWT signature generation failed
+[2026/06/29 15:55:23.677] [error] [output:stackdriver:stackdriver.0] cannot retrieve oauth2 token
+[2026/06/29 15:55:23.677] [error] [engine] chunk '2719100-1782748519.641704573.flb' cannot be retried: task_id=0, input=lib.0 > output=stackdriver.0
+==================
+WARNING: ThreadSanitizer: data race (pid=2719100)
+  Write of size 8 at 0x720c0000e830 by thread T3:
+    #0 flb_metrics_sum /usr/local/google/home/yiyu/src/fluent-bit/src/flb_metrics.c:184 (flb-rt-out_stackdriver+0x125abd) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #1 cb_stackdriver_flush /usr/local/google/home/yiyu/src/fluent-bit/plugins/out_stackdriver/stackdriver.c:3049 (flb-rt-out_stackdriver+0x2de12b) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #2 output_pre_cb_flush /usr/local/google/home/yiyu/src/fluent-bit/include/fluent-bit/flb_output.h:719 (flb-rt-out_stackdriver+0xb8065) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #3 co_init /usr/local/google/home/yiyu/src/fluent-bit/lib/monkey/deps/flb_libco/amd64.c:117 (flb-rt-out_stackdriver+0xc1ba46) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #4 output_params_set /usr/local/google/home/yiyu/src/fluent-bit/include/fluent-bit/flb_output.h:655 (flb-rt-out_stackdriver+0xb97b6) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #5 flb_output_flush_create /usr/local/google/home/yiyu/src/fluent-bit/include/fluent-bit/flb_output.h:1207 (flb-rt-out_stackdriver+0xb97b6)
+    #6 output_thread /usr/local/google/home/yiyu/src/fluent-bit/src/flb_output_thread.c:307 (flb-rt-out_stackdriver+0xb97b6)
+    #7 output_pre_cb_flush /usr/local/google/home/yiyu/src/fluent-bit/include/fluent-bit/flb_output.h:719 (flb-rt-out_stackdriver+0xb8065) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #8 co_init /usr/local/google/home/yiyu/src/fluent-bit/lib/monkey/deps/flb_libco/amd64.c:117 (flb-rt-out_stackdriver+0xc1ba46) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #9 output_params_set /usr/local/google/home/yiyu/src/fluent-bit/include/fluent-bit/flb_output.h:655 (flb-rt-out_stackdriver+0xb97b6) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #10 flb_output_flush_create /usr/local/google/home/yiyu/src/fluent-bit/include/fluent-bit/flb_output.h:1207 (flb-rt-out_stackdriver+0xb97b6)
+    #11 output_thread /usr/local/google/home/yiyu/src/fluent-bit/src/flb_output_thread.c:307 (flb-rt-out_stackdriver+0xb97b6)
+    #12 co_init /usr/local/google/home/yiyu/src/fluent-bit/lib/monkey/deps/flb_libco/amd64.c:117 (flb-rt-out_stackdriver+0xc1ba46) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #13 output_params_set /usr/local/google/home/yiyu/src/fluent-bit/include/fluent-bit/flb_output.h:655 (flb-rt-out_stackdriver+0xb97b6) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #14 flb_output_flush_create /usr/local/google/home/yiyu/src/fluent-bit/include/fluent-bit/flb_output.h:1207 (flb-rt-out_stackdriver+0xb97b6)
+    #15 output_thread /usr/local/google/home/yiyu/src/fluent-bit/src/flb_output_thread.c:307 (flb-rt-out_stackdriver+0xb97b6)
+    #16 flb_net_tcp_connect /usr/local/google/home/yiyu/src/fluent-bit/src/flb_network.c:1361 (flb-rt-out_stackdriver+0xce01b) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #17 flb_io_net_connect /usr/local/google/home/yiyu/src/fluent-bit/src/flb_io.c:129 (flb-rt-out_stackdriver+0x13e0e0) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #18 create_conn /usr/local/google/home/yiyu/src/fluent-bit/src/flb_upstream.c:629 (flb-rt-out_stackdriver+0xe6dd2) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #19 flb_upstream_conn_get /usr/local/google/home/yiyu/src/fluent-bit/src/flb_upstream.c:833 (flb-rt-out_stackdriver+0xe6dd2)
+    #20 cb_stackdriver_flush /usr/local/google/home/yiyu/src/fluent-bit/plugins/out_stackdriver/stackdriver.c:3023 (flb-rt-out_stackdriver+0x2dd6ed) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #21 output_pre_cb_flush /usr/local/google/home/yiyu/src/fluent-bit/include/fluent-bit/flb_output.h:719 (flb-rt-out_stackdriver+0xb8065) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #22 co_init /usr/local/google/home/yiyu/src/fluent-bit/lib/monkey/deps/flb_libco/amd64.c:117 (flb-rt-out_stackdriver+0xc1ba46) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #23 output_params_set /usr/local/google/home/yiyu/src/fluent-bit/include/fluent-bit/flb_output.h:655 (flb-rt-out_stackdriver+0xb97b6) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #24 flb_output_flush_create /usr/local/google/home/yiyu/src/fluent-bit/include/fluent-bit/flb_output.h:1207 (flb-rt-out_stackdriver+0xb97b6)
+    #25 output_thread /usr/local/google/home/yiyu/src/fluent-bit/src/flb_output_thread.c:307 (flb-rt-out_stackdriver+0xb97b6)
+    #26 step_callback /usr/local/google/home/yiyu/src/fluent-bit/src/flb_worker.c:43 (flb-rt-out_stackdriver+0xedce8) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+
+  Previous write of size 8 at 0x720c0000e830 by thread T4:
+    #0 flb_metrics_sum /usr/local/google/home/yiyu/src/fluent-bit/src/flb_metrics.c:184 (flb-rt-out_stackdriver+0x125abd) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #1 cb_stackdriver_flush /usr/local/google/home/yiyu/src/fluent-bit/plugins/out_stackdriver/stackdriver.c:3049 (flb-rt-out_stackdriver+0x2de12b) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #2 output_pre_cb_flush /usr/local/google/home/yiyu/src/fluent-bit/include/fluent-bit/flb_output.h:719 (flb-rt-out_stackdriver+0xb8065) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #3 co_init /usr/local/google/home/yiyu/src/fluent-bit/lib/monkey/deps/flb_libco/amd64.c:117 (flb-rt-out_stackdriver+0xc1ba46) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #4 output_params_set /usr/local/google/home/yiyu/src/fluent-bit/include/fluent-bit/flb_output.h:655 (flb-rt-out_stackdriver+0xb97b6) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #5 flb_output_flush_create /usr/local/google/home/yiyu/src/fluent-bit/include/fluent-bit/flb_output.h:1207 (flb-rt-out_stackdriver+0xb97b6)
+    #6 output_thread /usr/local/google/home/yiyu/src/fluent-bit/src/flb_output_thread.c:307 (flb-rt-out_stackdriver+0xb97b6)
+    #7 output_pre_cb_flush /usr/local/google/home/yiyu/src/fluent-bit/include/fluent-bit/flb_output.h:719 (flb-rt-out_stackdriver+0xb8065) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #8 co_init /usr/local/google/home/yiyu/src/fluent-bit/lib/monkey/deps/flb_libco/amd64.c:117 (flb-rt-out_stackdriver+0xc1ba46) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #9 output_params_set /usr/local/google/home/yiyu/src/fluent-bit/include/fluent-bit/flb_output.h:655 (flb-rt-out_stackdriver+0xb97b6) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #10 flb_output_flush_create /usr/local/google/home/yiyu/src/fluent-bit/include/fluent-bit/flb_output.h:1207 (flb-rt-out_stackdriver+0xb97b6)
+    #11 output_thread /usr/local/google/home/yiyu/src/fluent-bit/src/flb_output_thread.c:307 (flb-rt-out_stackdriver+0xb97b6)
+    #12 flb_io_net_connect /usr/local/google/home/yiyu/src/fluent-bit/src/flb_io.c:129 (flb-rt-out_stackdriver+0x13e0e0) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #13 create_conn /usr/local/google/home/yiyu/src/fluent-bit/src/flb_upstream.c:629 (flb-rt-out_stackdriver+0xe6dd2) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #14 flb_upstream_conn_get /usr/local/google/home/yiyu/src/fluent-bit/src/flb_upstream.c:833 (flb-rt-out_stackdriver+0xe6dd2)
+    #15 cb_stackdriver_flush /usr/local/google/home/yiyu/src/fluent-bit/plugins/out_stackdriver/stackdriver.c:3023 (flb-rt-out_stackdriver+0x2dd6ed) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #16 output_pre_cb_flush /usr/local/google/home/yiyu/src/fluent-bit/include/fluent-bit/flb_output.h:719 (flb-rt-out_stackdriver+0xb8065) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #17 co_init /usr/local/google/home/yiyu/src/fluent-bit/lib/monkey/deps/flb_libco/amd64.c:117 (flb-rt-out_stackdriver+0xc1ba46) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #18 output_params_set /usr/local/google/home/yiyu/src/fluent-bit/include/fluent-bit/flb_output.h:655 (flb-rt-out_stackdriver+0xb97b6) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #19 flb_output_flush_create /usr/local/google/home/yiyu/src/fluent-bit/include/fluent-bit/flb_output.h:1207 (flb-rt-out_stackdriver+0xb97b6)
+    #20 output_thread /usr/local/google/home/yiyu/src/fluent-bit/src/flb_output_thread.c:307 (flb-rt-out_stackdriver+0xb97b6)
+    #21 step_callback /usr/local/google/home/yiyu/src/fluent-bit/src/flb_worker.c:43 (flb-rt-out_stackdriver+0xedce8) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+
+  Location is heap block of size 40 at 0x720c0000e820 allocated by thread T1:
+    #0 malloc ../../../../src/libsanitizer/tsan/tsan_interceptors_posix.cpp:676 (libtsan.so.2+0x82cec) (BuildId: fd145dff02b87fe539edddbf1ac1ac0067242694)
+    #1 flb_malloc /usr/local/google/home/yiyu/src/fluent-bit/include/fluent-bit/flb_mem.h:80 (flb-rt-out_stackdriver+0x1257c9) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #2 flb_metrics_add /usr/local/google/home/yiyu/src/fluent-bit/src/flb_metrics.c:132 (flb-rt-out_stackdriver+0x1257c9)
+    #3 flb_stackdriver_conf_create /usr/local/google/home/yiyu/src/fluent-bit/plugins/out_stackdriver/stackdriver_conf.c:651 (flb-rt-out_stackdriver+0x2e5baf) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #4 cb_stackdriver_init /usr/local/google/home/yiyu/src/fluent-bit/plugins/out_stackdriver/stackdriver.c:1327 (flb-rt-out_stackdriver+0x2df4a8) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #5 flb_output_init_all /usr/local/google/home/yiyu/src/fluent-bit/src/flb_output.c:1692 (flb-rt-out_stackdriver+0xb6d23) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #6 flb_engine_start /usr/local/google/home/yiyu/src/fluent-bit/src/flb_engine.c:1023 (flb-rt-out_stackdriver+0xd545d) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #7 flb_lib_worker /usr/local/google/home/yiyu/src/fluent-bit/src/flb_lib.c:909 (flb-rt-out_stackdriver+0x8c4a9) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+
+  Thread T3 'flb-out-stackdr' (tid=2719105, running) created by thread T1 at:
+    #0 pthread_create ../../../../src/libsanitizer/tsan/tsan_interceptors_posix.cpp:1041 (libtsan.so.2+0x573d0) (BuildId: fd145dff02b87fe539edddbf1ac1ac0067242694)
+    #1 mk_utils_worker_spawn /usr/local/google/home/yiyu/src/fluent-bit/lib/monkey/mk_core/mk_utils.c:284 (flb-rt-out_stackdriver+0xc191b8) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #2 flb_worker_create /usr/local/google/home/yiyu/src/fluent-bit/src/flb_worker.c:96 (flb-rt-out_stackdriver+0xede71) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #3 flb_tp_thread_start /usr/local/google/home/yiyu/src/fluent-bit/src/flb_thread_pool.c:123 (flb-rt-out_stackdriver+0xf1fed) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #4 flb_tp_thread_start_all /usr/local/google/home/yiyu/src/fluent-bit/src/flb_thread_pool.c:170 (flb-rt-out_stackdriver+0xf211b) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #5 flb_output_thread_pool_start /usr/local/google/home/yiyu/src/fluent-bit/src/flb_output_thread.c:651 (flb-rt-out_stackdriver+0xbd2b5) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #6 flb_output_enable_multi_threading /usr/local/google/home/yiyu/src/fluent-bit/src/flb_output.c:1161 (flb-rt-out_stackdriver+0xb5b56) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #7 flb_output_init_all /usr/local/google/home/yiyu/src/fluent-bit/src/flb_output.c:1703 (flb-rt-out_stackdriver+0xb6d66) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #8 flb_engine_start /usr/local/google/home/yiyu/src/fluent-bit/src/flb_engine.c:1023 (flb-rt-out_stackdriver+0xd545d) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #9 flb_lib_worker /usr/local/google/home/yiyu/src/fluent-bit/src/flb_lib.c:909 (flb-rt-out_stackdriver+0x8c4a9) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+
+  Thread T4 'flb-out-stackdr' (tid=2719106, running) created by thread T1 at:
+    #0 pthread_create ../../../../src/libsanitizer/tsan/tsan_interceptors_posix.cpp:1041 (libtsan.so.2+0x573d0) (BuildId: fd145dff02b87fe539edddbf1ac1ac0067242694)
+    #1 mk_utils_worker_spawn /usr/local/google/home/yiyu/src/fluent-bit/lib/monkey/mk_core/mk_utils.c:284 (flb-rt-out_stackdriver+0xc191b8) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #2 flb_worker_create /usr/local/google/home/yiyu/src/fluent-bit/src/flb_worker.c:96 (flb-rt-out_stackdriver+0xede71) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #3 flb_tp_thread_start /usr/local/google/home/yiyu/src/fluent-bit/src/flb_thread_pool.c:123 (flb-rt-out_stackdriver+0xf1fed) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #4 flb_tp_thread_start_all /usr/local/google/home/yiyu/src/fluent-bit/src/flb_thread_pool.c:170 (flb-rt-out_stackdriver+0xf211b) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #5 flb_output_thread_pool_start /usr/local/google/home/yiyu/src/fluent-bit/src/flb_output_thread.c:651 (flb-rt-out_stackdriver+0xbd2b5) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #6 flb_output_enable_multi_threading /usr/local/google/home/yiyu/src/fluent-bit/src/flb_output.c:1161 (flb-rt-out_stackdriver+0xb5b56) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #7 flb_output_init_all /usr/local/google/home/yiyu/src/fluent-bit/src/flb_output.c:1703 (flb-rt-out_stackdriver+0xb6d66) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #8 flb_engine_start /usr/local/google/home/yiyu/src/fluent-bit/src/flb_engine.c:1023 (flb-rt-out_stackdriver+0xd545d) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #9 flb_lib_worker /usr/local/google/home/yiyu/src/fluent-bit/src/flb_lib.c:909 (flb-rt-out_stackdriver+0x8c4a9) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+
+  Thread T1 'flb-pipeline' (tid=2719103, running) created by main thread at:
+    #0 pthread_create ../../../../src/libsanitizer/tsan/tsan_interceptors_posix.cpp:1041 (libtsan.so.2+0x573d0) (BuildId: fd145dff02b87fe539edddbf1ac1ac0067242694)
+    #1 mk_utils_worker_spawn /usr/local/google/home/yiyu/src/fluent-bit/lib/monkey/mk_core/mk_utils.c:284 (flb-rt-out_stackdriver+0xc191b8) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #2 do_start /usr/local/google/home/yiyu/src/fluent-bit/src/flb_lib.c:945 (flb-rt-out_stackdriver+0x8a2c2) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #3 flb_start /usr/local/google/home/yiyu/src/fluent-bit/src/flb_lib.c:992 (flb-rt-out_stackdriver+0x8c43a) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #4 flb_test_resource_k8s_container_concurrency /usr/local/google/home/yiyu/src/fluent-bit/tests/runtime/out_stackdriver.c:3693 (flb-rt-out_stackdriver+0x7ee22) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #5 acutest_do_run_ /usr/local/google/home/yiyu/src/fluent-bit/tests/runtime/../lib/acutest/acutest.h:1034 (flb-rt-out_stackdriver+0x89960) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #6 acutest_run_ /usr/local/google/home/yiyu/src/fluent-bit/tests/runtime/../lib/acutest/acutest.h:1205 (flb-rt-out_stackdriver+0x73a22) (BuildId: 7fe676e2e728f1c08a6d1af4186fd1405b74fe96)
+    #7 main /usr/local/google/home/yiyu/src/fluent-bit/tests/runtime/../lib/acutest/acutest.h:1769 (flb-rt-out_stackdriver+0x73a22)
+
+SUMMARY: ThreadSanitizer: data race /usr/local/google/home/yiyu/src/fluent-bit/src/flb_metrics.c:184 in flb_metrics_sum
+==================
+[2026/06/29 15:55:23.682] [error] [engine] chunk '2719100-1782748519.642093853.flb' cannot be retried: task_id=1, input=lib.1 > output=stackdriver.0
+[2026/06/29 15:55:23.682] [error] [engine] chunk '2719100-1782748519.644946222.flb' cannot be retried: task_id=3, input=lib.3 > output=stackdriver.0
+[2026/06/29 15:55:23.690] [error] [output:stackdriver:stackdriver.0] error creating RSA context
+[2026/06/29 15:55:23.691] [error] [output:stackdriver:stackdriver.0] JWT signature generation failed
+[2026/06/29 15:55:23.691] [error] [output:stackdriver:stackdriver.0] cannot retrieve oauth2 token
+[2026/06/29 15:55:23.691] [error] [engine] chunk '2719100-1782748519.642625093.flb' cannot be retried: task_id=2, input=lib.2 > output=stackdriver.0
+[2026/06/29 15:55:23.691] [error] [engine] chunk '2719100-1782748519.647799852.flb' cannot be retried: task_id=4, input=lib.4 > output=stackdriver.0
+[2026/06/29 15:55:24.251] [ info] [engine] service has stopped (0 pending tasks)
+[2026/06/29 15:55:24.251] [ info] [output:stackdriver:stackdriver.0] thread worker #0 stopping...
+[2026/06/29 15:55:24.252] [ info] [output:stackdriver:stackdriver.0] thread worker #0 stopped
+[2026/06/29 15:55:24.253] [ info] [output:stackdriver:stackdriver.0] thread worker #1 stopping...
+[2026/06/29 15:55:24.254] [ info] [output:stackdriver:stackdriver.0] thread worker #1 stopped
+[ OK ]
+SUCCESS: All unit tests have passed.
+ThreadSanitizer: reported 6 warnings
