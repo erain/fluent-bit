@@ -1,8 +1,8 @@
 {
   "current_day": 5,
-  "current_phase": "honest_performance",
+  "current_phase": "package_for_upstream",
   "budget_used_wall_clock_s": 0,
-  "champion_config_hash": "opt-day3-test-2-workers-2-limit-1",
-  "champion_image_digest": "sha256:97e3744444c3dd0690fffbaafd8e894ebe63f15fa1b302792cc88bb48709f701",
-  "last_action": "completed GKE log attribution reachability audit and security hardening implementation; transitioning to Phase C honest performance measurements"
+  "champion_config_hash": "opt-day5-phase-c-1-w1",
+  "champion_image_digest": "us-central1-docker.pkg.dev/timbai-gke-dev/gke-component-images/fluentbit:opt-day5-phase-c-1",
+  "last_action": "completed Phase C honest performance measurements comparing workers=1 vs workers=2 on Release image; transitioning to Phase D upstream packaging"
 }

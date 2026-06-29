@@ -137,8 +137,8 @@ def query_bq_log_count(project, cluster, namespace, gen_id, start_epoch, end_epo
     sql = (
         f"SELECT count(*) as log_count "
         f"FROM `{project}.gke_default_logs._AllLogs` "
-        f"WHERE timestamp >= TIMESTAMP_SECONDS({int(start_epoch) - 10}) "
-        f"  AND timestamp <= TIMESTAMP_SECONDS({int(end_epoch) + 300}) "
+        f"WHERE timestamp >= TIMESTAMP_SECONDS({int(start_epoch) - 5}) "
+        f"  AND timestamp <= TIMESTAMP_SECONDS({int(end_epoch) + 5}) "
         f"  AND JSON_VALUE(resource.labels.cluster_name) = '{cluster}' "
         f"  AND JSON_VALUE(resource.labels.namespace_name) = '{namespace}' "
         f"  AND JSON_VALUE(json_payload.gen_id) = '{gen_id}'"
