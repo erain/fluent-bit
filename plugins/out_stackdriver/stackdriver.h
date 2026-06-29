@@ -219,6 +219,10 @@ struct flb_stackdriver {
     flb_sds_t cloud_logging_base_url;
     flb_sds_t cloud_logging_write_url;
 
+    /* flag to trust local_resource_id in payload */
+    int trust_payload_local_resource_id;
+
+
 #ifdef FLB_HAVE_METRICS
     /* metrics */
     struct cmt_counter *cmt_successful_requests;

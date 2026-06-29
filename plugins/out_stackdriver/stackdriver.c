@@ -748,8 +748,13 @@ static int extract_local_resource_id(const void *data, size_t bytes,
                     &log_decoder,
                     &log_event)) == FLB_EVENT_DECODER_SUCCESS) {
         map = log_event.body->via.map;
-        local_resource_id = get_str_value_from_msgpack_map(map, LOCAL_RESOURCE_ID_KEY,
-                                                           LEN_LOCAL_RESOURCE_ID_KEY);
+        if (ctx->trust_payload_local_resource_id == FLB_TRUE) {
+            local_resource_id = get_str_value_from_msgpack_map(map, LOCAL_RESOURCE_ID_KEY,
+                                                               LEN_LOCAL_RESOURCE_ID_KEY);
+        }
+        else {
+            local_resource_id = NULL;
+        }
 
         if (local_resource_id == NULL) {
             /* if local_resource_id is not found, use the tag of the log */
@@ -1075,16 +1080,44 @@ static int process_local_resource_id(struct stackdriver_format_ctx *fmt_ctx,
                                      const char *tag, int tag_len, char *type)
 {
     int ret;
+    struct flb_stackdriver *ctx = fmt_ctx->ctx;
 
     // parsing local_resource_id from tag takes higher priority
-    if (is_tag_match_regex(fmt_ctx->ctx, tag, tag_len) > 0) {
+    if (is_tag_match_regex(ctx, tag, tag_len) > 0) {
         ret = extract_resource_labels_from_regex(fmt_ctx, tag, tag_len, FLB_TRUE);
     }
-    else if (is_local_resource_id_match_regex(fmt_ctx) > 0) {
-        ret = extract_resource_labels_from_regex(fmt_ctx, tag, tag_len, FLB_FALSE);
+    else if (ctx->trust_payload_local_resource_id == FLB_TRUE) {
+        if (is_local_resource_id_match_regex(fmt_ctx) > 0) {
+            ret = extract_resource_labels_from_regex(fmt_ctx, tag, tag_len, FLB_FALSE);
+        }
+        else {
+            ret = set_monitored_resource_labels(fmt_ctx, type);
+        }
     }
     else {
-        ret = set_monitored_resource_labels(fmt_ctx, type);
+        /* Fallback: set resource labels to safe unknown defaults to prevent forgery */
+        if (strcmp(type, K8S_CONTAINER) == 0) {
+            fmt_ctx->namespace_name = flb_sds_create("unknown");
+            fmt_ctx->pod_name = flb_sds_create("unknown");
+            fmt_ctx->container_name = flb_sds_create("unknown");
+            if (!fmt_ctx->namespace_name || !fmt_ctx->pod_name || !fmt_ctx->container_name) {
+                return -1;
+            }
+        }
+        else if (strcmp(type, K8S_POD) == 0) {
+            fmt_ctx->namespace_name = flb_sds_create("unknown");
+            fmt_ctx->pod_name = flb_sds_create("unknown");
+            if (!fmt_ctx->namespace_name || !fmt_ctx->pod_name) {
+                return -1;
+            }
+        }
+        else if (strcmp(type, K8S_NODE) == 0) {
+            fmt_ctx->node_name = flb_sds_create("unknown");
+            if (!fmt_ctx->node_name) {
+                return -1;
+            }
+        }
+        ret = 0;
     }
 
     return ret;
@@ -3373,6 +3406,12 @@ static struct flb_config_map config_map[] = {
       0, FLB_TRUE, offsetof(struct flb_stackdriver, cloud_logging_base_url),
       "The base Cloud Logging API URL to use for the /v2/entries:write API request. Default: https://logging.googleapis.com"
     },
+    {
+      FLB_CONFIG_MAP_BOOL, "trust_payload_local_resource_id", "true",
+      0, FLB_TRUE, offsetof(struct flb_stackdriver, trust_payload_local_resource_id),
+      "Trust local_resource_id field supplied in log payload"
+    },
+
     /* EOF */
     {0}
 };
