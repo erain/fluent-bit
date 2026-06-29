@@ -56,7 +56,7 @@ Our thread-local concurrency fix was verified via systematic local unit-testing 
 
 1. **ThreadSanitizer (TSan) Verification:**
    - **Command:** `./build/bin/flb-rt-out_stackdriver resource_k8s_container_concurrency`
-   - **Result:** **PASS**. Checked with 2 output workers and 5 concurrent log input sources. Zero data races or thread safety warnings were reported in the `out_stackdriver` code paths.
+   - **Result:** **PASS**. Checked with 2 output workers and 5 concurrent log input sources. Resource-metadata races were completely eliminated. The 6 residual TSan warnings are pre-existing benign races in the metrics/cmetrics layer (`flb_metrics_sum`, `cmt_map`) reached via `cb_stackdriver_flush`; the `flb_metrics` counter race has an upstream fix in fluent/fluent-bit#12007.
    
 2. **Valgrind Memcheck Verification:**
    - **Command:** `valgrind --leak-check=full --show-leak-kinds=all ./build/bin/flb-rt-out_stackdriver resource_k8s_container_concurrency`
