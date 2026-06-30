@@ -1,8 +1,10 @@
 {
   "current_day": 5,
-  "current_phase": "final_report",
+  "current_phase": "done",
   "budget_used_wall_clock_s": 0,
   "champion_config_hash": "opt-day5-phase-c-1-w1",
   "champion_image_digest": "us-central1-docker.pkg.dev/timbai-gke-dev/gke-component-images/fluentbit:opt-day5-phase-c-1",
-  "last_action": "completed Phase D: created, tested, and pushed independent upstream branches pr-a-bugfixes, pr-b-concurrency, and pr-c-attribution; transitioning to Phase E final report"
+  "last_action": "Phase E complete: final report at research/findings/REPORT.md; PR-A (#12022) and PR-B (#12023) opened upstream; PR-C pending k8s_cluster-fallback rework commit + rebase on PR-B",
+  "upstream_prs": {"pr_a_bugfixes": "fluent/fluent-bit#12022", "pr_b_concurrency": "fluent/fluent-bit#12023", "pr_c_attribution": "prepared (not opened)"},
+  "open_items": "Commit PR-C k8s_cluster-fallback rework (currently 'unknown' in git; tested diff held locally) and rebase pr-c-attribution onto the rewritten pr-b-concurrency"
 }

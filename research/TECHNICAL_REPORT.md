@@ -3,7 +3,7 @@
 ## Executive Summary
 This report summarizes the findings, optimizations, and stability fixes implemented during the research program on the GKE Fluent Bit logging setup (`fluent-bit-agent` running on ARM64 nodes, communicating with Google Cloud Logging / LoggingV3 via the `out_stackdriver` plugin).
 
-Over five days of stress-testing (under L2 and L3 load levels), we identified and resolved several critical performance bottlenecks, memory safety regressions, and log forgery risks, achieving a **100% stable, crash-free, and secure deployment** capable of sustaining maximum egress throughput.
+Over five days of stress-testing (L2 and L3 load levels), we fixed a real multi-worker memory-safety crash (`workers ≥ 2` use-after-free/double-free) and several payload-parsing bugs, and established evidence-based configuration guidance. Key honest findings: `workers=1` is preferred (no throughput loss vs `workers=2`, ~18% lower memory; ODR-0001); **L3 throughput is bound by the Cloud Logging API quota, not Fluent Bit** (≈0.60 delivery for stock and tuned alike — a downstream ceiling, not a win); and the payload `local_resource_id` **forgery risk is already defended in GKE** by `parser.lua` (the in-plugin hardening is optional defense-in-depth, not a GKE fix). See `research/findings/REPORT.md` for the authoritative findings and action items.
 
 ---
 
