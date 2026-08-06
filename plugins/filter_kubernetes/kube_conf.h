@@ -195,6 +195,7 @@ struct flb_kube {
     int kubelet_port;
 
     int kube_meta_cache_ttl;
+    int kube_meta_cache_size;
     int kube_meta_namespace_cache_ttl;
 
     /* Configuration used for enabling pod to service name mapping*/
